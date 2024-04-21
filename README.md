@@ -247,3 +247,434 @@ describe('TEST GET No 1 dan No 3', () => {
 //jalankan test
 //npx jest app.test.js
 ```
+
+## 4. Setting Database
+
+## 5. Menangkap Error Middleware
+
+Energi terbesar programmer adalah menangani error atau bug.
+Kadang Error bisa terjadi pada bermacam proses, untuk memudahkan dalam mengetahui sumber error,
+maka semua error di masukkan dalam middleware >> kirim error dan hentikan semua proses.
+
+a. Membuat fungsi createResponseError(status, message) return object
+
+```json
+error = {
+  "message" : message,
+  "status" : status
+}
+```
+
+membuat folder //src/error
+
+```
+//src/error/response-error.js
+function createResponseError(status, message) {
+    const error = new Error(message);
+    error.status = status;
+    return error;
+}
+
+export { createResponseError };
+//const error = createResponseError(404, "Not Found");
+
+```
+
+b. Membuat fungsi errorMiddleware(err, req, res, next)
+
+1.jika tidak error >> next, 2. jika error dari ResponseError kirim status dan pesan error, 3. jika error diluar response kirim status 500 dan pesan error.
+
+```
+//src/middleware/error-middleware.js
+import {ResponseError} from "../error/response-error.js";
+
+const errorMiddleware = async (err, req, res, next) => {
+  //1. jika tidak error maka next lanjutkan
+    if (!err) {
+        next();
+        return;
+    }
+
+    //2. jika error dari response error maka tampilkan status dan pesannya
+    if (err instanceof ResponseError) {
+        res.status(err.status).json({
+            errors: err.message
+        }).end();
+
+    // Jika pesan error validation kirim error validation
+    //else if (err instanceof ValidationError) {
+    //  res.status(400).json({
+    //    errors: err.message
+    //  })
+    //}
+
+    //3. jika error selain itu maka kirim status 500 dan pesan error
+    }  else {
+        res.status(500).json({
+            errors: err.message
+        }).end();
+    }
+}
+
+export {
+    errorMiddleware
+}
+```
+
+c. Jalankan middleware errorMiddleware di app
+
+```
+//src/application.js
+//a. import library Framework express
+import express from "express";
+
+.......................
+
+app.use(publicRouter);
+app.use(errorMiddleware)
+```
+
+## 6. Membuat Register User API
+
+### Langkah - langkah :
+
+1. Endpoint dan response >> Pahami alamat End point dan bgmana responnya >> POST /api/users
+2. Validasi Request Body >> Data yg dikirim req.body (username,password,name) >> validasi dahulu isinya
+
+```
+const registerUserValidation = Joi.object({ username: ..., password: ..., name: ...});
+
+const validate = (schema, request) => {
+    const result = schema.validate(request)
+}
+```
+
+3. Service >> 1.CekValidationRequestBody, 2.GetUsername, 3.CekUsername, 4.EncryptPassword, 5.RegisterUser
+
+```
+const register = async (request) => {
+    //1. cek validation >> jika error maka kirim pesan error, atau jika sesuai lanjutkan no.2
+	const user = validate(registerUserValidation, request);
+    //2. Get username di database
+    //3. Cek jika username sudah ada / === 1 maka kirim error 400, user sudah ada
+    //jika countUser = 0 atau belum ada maka lanjutkan no.4
+    //4. encrypt dg bcrypt password agar tidak terlihat langsung di database
+    //5. buat user baru ke database
+}
+```
+
+4. Controller >> meneruskan semua request dari route (userController.register) ke service (userService.register(req.body)), jika sukses kirim status 200 dan isi data
+
+```
+const register = async (req, res, next) => {
+    try {
+        const result = await userService.register(req.body);
+    } catch (e) {
+        next(e);
+    }
+}
+```
+
+5. Route >> Membuat routing POST /api/users >> userController.register
+
+`publicRouter.post('/api/users', userController.register)`
+
+6. Unit Test >>
+
+```
+// Fungsi tes untuk register POST /api/users
+describe('Register POST /api/users', function () {
+    //1. setelah selesai test, hapus username: "test" di table/database
+    //2. register user baru
+    //3. test body request invalid
+    //4. test user yang sudah terdaftar
+})
+```
+
+### - a. Endpoint : POST /api/users
+
+Request Body :
+
+```json
+{
+  "username": "edy",
+  "password": "rahasia",
+  "name": "Edy Cole"
+}
+```
+
+Response Body Success :
+
+```json
+{
+  "data": {
+    "username": "edy",
+    "name": "Edy Cole"
+  }
+}
+```
+
+Response Body Error :
+
+```json
+{
+  "errors": "Username already registered"
+}
+```
+
+### - b. membuat folder : validation, service, controller, route
+
+### Langkah : Validasi >> Service >> Controller >> Route
+
+### - c. Membuat Validation sesuaikan dengan database
+
+```
+// pada pembuatan tabel di database kita menentukan masing2 kolom
+
+CREATE TABLE users (
+username VARCHAR(100) PRIMARY KEY, >> joi : max(100).required()
+password VARCHAR(100), >> joi : max(100).required()
+name VARCHAR(100),  >> joi : max(100).required()
+token VARCHAR(100)
+);
+```
+
+Validation dengan Joi sesuaikan dengan table mysql
+
+```
+//validation/user-validation.js
+import Joi from "joi";
+
+const registerUserValidation = Joi.object({
+    username: Joi.string().max(100).required(),
+    password: Joi.string().max(100).required(),
+    name: Joi.string().max(100).required()
+});
+
+export {
+    registerUserValidation,
+}
+```
+
+Fungsi validate untuk menangkap error dari validasi >> callback
+
+```
+//validation/validation.js
+import {ResponseError} from "../error/response-error.js";
+
+//callback >> validate = (schema, callback){ >> schema.validate.error/value }
+const validate = (schema, request) => {
+    const result = schema.validate(request, {
+        abortEarly: false,
+        allowUnknown: false
+    })
+    //jika result.error = true >> kirim status 400 dan pesan error
+    if (result.error) {
+        throw new ResponseError(400, result.error.message);
+    //jika result.error = false >> kirim result.value >> true
+    } else {
+        return result.value;
+    }
+}
+
+export {
+    validate
+}
+```
+
+### - d. Membuat user-service untuk Register
+
+Langkahnya 1.CekValidationRequestBody, 2.GetUsername, 3.CekUsername, 4.EncryptPassword, 5.RegisterUser
+
+```
+//src/service/user-service.js
+import {validate} from "../validation/validation.js";
+import {
+    getUserValidation,
+} from "../validation/user-validation.js";
+import bcrypt from "bcrypt";
+
+const register = async (request) => {
+
+    //1. cek validation >> jika error maka kirim pesan error, atau jika sesuai lanjutkan no.2
+    const user = validate(registerUserValidation, request);
+    //2. Get username di database
+    const countUser = await prismaClient.user.count({
+        where: {
+            username: user.username
+        }
+    });
+    //3. Cek jika username sudah ada / === 1 maka kirim error 400, user sudah ada
+    //jika countUser = 0 atau belum ada maka lanjutkan no.4
+    if (countUser === 1) {
+        throw new ResponseError(400, "Username already exists");
+    }
+
+    //4. encrypt dg bcrypt password agar tidak terlihat langsung di database
+    user.password = await bcrypt.hash(user.password, 10);
+
+    //5. buat user baru ke database
+    return prismaClient.user.create({
+        data: user,
+        select: {
+            username: true,
+            name: true
+        }
+    });
+}
+
+export default {
+    register,
+}
+```
+
+### - e. Membuat Controller >> user-controller.js
+
+Controller : meneruskan semua request dari route ke service, jika sukses kirim status 200 dan isi data
+
+```
+//src/controller//user-controller.js
+import userService from "../service/user-service.js";
+
+const register = async (req, res, next) => {
+    try {
+        const result = await userService.register(req.body);
+        res.status(200).json({
+            data: result
+        });
+    } catch (e) {
+        next(e);
+    }
+}
+
+export default {
+    register,
+}
+```
+
+### - f. Membuat Route >> public-api.js
+
+Membuat routing POST /api/users >> userController.register
+
+```
+//src/route// public-api.js
+import express from "express";
+import userController from "../controller/user-controller.js";
+
+const publicRouter = new express.Router();
+publicRouter.post('/api/users', userController.register);
+
+export {
+    publicRouter
+}
+```
+
+Masukkan ke dalam middleware application
+
+```
+//src/application.js
+//a. import library Framework express
+import express from "express";
+
+.........
+
+app.use(publicRouter);
+```
+
+### - g. Unit Test
+
+```
+//src/test/user.test.js
+import supertest from "supertest";
+import {app} from "../src/application/web.js";
+import bcrypt from "bcrypt";
+
+// Fungsi tes untuk register POST /api/users
+describe('Register POST /api/users', function () {
+
+    //1. setelah selesai test, hapus username: "test" di table/database
+    afterEach(async () => {
+        await removeTestUser();
+    })
+
+    //2. register user baru
+    it('should can register new user', async () => {
+        const result = await supertest(web)
+            .post('/api/users')
+            .send({
+                username: 'test',
+                password: 'rahasia',
+                name: 'test'
+            });
+
+        expect(result.status).toBe(200);
+        expect(result.body.data.username).toBe("test");
+        expect(result.body.data.name).toBe("test");
+        expect(result.body.data.password).toBeUndefined();
+    });
+
+    //3. test body request invalid
+    it('should reject if request is invalid', async () => {
+        const result = await supertest(web)
+            .post('/api/users')
+            .send({
+                username: '',
+                password: '',
+                name: ''
+            });
+
+        logger.info(result.body);
+
+        expect(result.status).toBe(400);
+        expect(result.body.errors).toBeDefined();
+    });
+
+    //4. test user yang sudah terdaftar
+    it('should reject if username already registered', async () => {
+        let result = await supertest(web)
+            .post('/api/users')
+            .send({
+                username: 'test',
+                password: 'rahasia',
+                name: 'test'
+            });
+
+        logger.info(result.body);
+
+        expect(result.status).toBe(200);
+        expect(result.body.data.username).toBe("test");
+        expect(result.body.data.name).toBe("test");
+        expect(result.body.data.password).toBeUndefined();
+
+        result = await supertest(web)
+            .post('/api/users')
+            .send({
+                username: 'test',
+                password: 'rahasia',
+                name: 'test'
+            });
+
+        logger.info(result.body);
+
+        expect(result.status).toBe(400);
+        expect(result.body.errors).toBeDefined();
+    });
+});
+
+```
+
+```
+//src/test/test-util.js
+
+import {prismaClient} from "../src/application/database.js";
+import bcrypt from "bcrypt";
+
+export const removeTestUser = async () => {
+    await prismaClient.user.deleteMany({
+        where: {
+            username: "test"
+        }
+    })
+}
+
+```

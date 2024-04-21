@@ -14,3 +14,5 @@ app.get('/', (req, res) => {
   console.log('Hello World requested');
   res.send('Hello World!');
 });
+
+app.use(publicRouter);
