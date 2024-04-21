@@ -23,7 +23,7 @@ Content-Type: application/json
 "name": "test"
 }
 
-### 1c. Fungsi tes untuk register >> ERROR Duplicate
+### 1c. Fungsi tes untuk register >> ERROR Duplicate 
 POST http://localhost:3000/api/users
 Content-Type: application/json
 

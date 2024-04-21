@@ -1,5 +1,5 @@
 //validation/validation.js
-import { createResponseError } from "../error/response-error.js";
+import { ResponseError } from "../error/response-error.js";
 
 
 //callback >> validate = (schema, callback){ >> schema.validate.error/value }
@@ -10,7 +10,7 @@ const validate = (schema, request) => {
   })
   //jika result.error = true >> kirim status 400 dan pesan error
   if (result.error) {
-    throw new createResponseError(400, result.error.message);
+    throw new ResponseError(400, result.error.message);
     //jika result.error = false >> kirim result.value >> true
   } else {
     return result.value;

@@ -1,4 +1,5 @@
 //src/service/user-service.js
+import { ResponseError } from "../error/response-error.js";
 import { query } from "../util/db.js";
 import { registerUserValidation } from "../validation/user-validation.js";
 import { validate } from "../validation/validation.js";
@@ -15,7 +16,8 @@ const register = async (request) => {
   const countUser = await query('SELECT * FROM users WHERE username = ?', [user.username])
   //3. Cek jika username sudah ada / === 1 maka kirim error 400, user sudah ada
   //jika countUser = 0 atau belum ada maka lanjutkan no.4
-  if (countUser === 1) {
+  console.log("countUser:", countUser.length);
+  if (countUser.length === 1) {
     throw new ResponseError(400, "Username already exists");
   }
 

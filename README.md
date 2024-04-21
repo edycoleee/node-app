@@ -405,14 +405,18 @@ membuat folder //src/error
 
 ```
 //src/error/response-error.js
-function createResponseError(status, message) {
-    const error = new Error(message);
-    error.status = status;
-    return error;
+class ResponseError extends Error {
+
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
 }
 
-export { createResponseError };
-//const error = createResponseError(404, "Not Found");
+export {
+  ResponseError
+}
+//const error = new ResponseError(404, "Not Found");
 
 ```
 
@@ -422,38 +426,35 @@ b. Membuat fungsi errorMiddleware(err, req, res, next)
 
 ```
 //src/middleware/error-middleware.js
-import {ResponseError} from "../error/response-error.js";
+import { ResponseError } from "../error/response-error.js";
 
 const errorMiddleware = async (err, req, res, next) => {
+  console.log("ERROR :", err);
+  console.log(err instanceof ResponseError);
+  console.log(err.constructor);
+  console.log(err.constructor.name);
   //1. jika tidak error maka next lanjutkan
-    if (!err) {
-        next();
-        return;
-    }
+  if (!err) {
+    next();
+    return;
+  }
 
-    //2. jika error dari response error maka tampilkan status dan pesannya
-    if (err instanceof ResponseError) {
-        res.status(err.status).json({
-            errors: err.message
-        }).end();
-
-    // Jika pesan error validation kirim error validation
-    //else if (err instanceof ValidationError) {
-    //  res.status(400).json({
-    //    errors: err.message
-    //  })
-    //}
+  //2. jika error dari response error maka tampilkan status dan pesannya
+  if (err instanceof ResponseError) {
+    res.status(err.status).json({
+      errors: err.message
+    }).end();
 
     //3. jika error selain itu maka kirim status 500 dan pesan error
-    }  else {
-        res.status(500).json({
-            errors: err.message
-        }).end();
-    }
+  } else {
+    res.status(500).json({
+      errors: err.message
+    }).end();
+  }
 }
 
 export {
-    errorMiddleware
+  errorMiddleware
 }
 ```
 
@@ -626,41 +627,45 @@ Langkahnya 1.CekValidationRequestBody, 2.GetUsername, 3.CekUsername, 4.EncryptPa
 
 ```
 //src/service/user-service.js
-import {validate} from "../validation/validation.js";
-import {
-    getUserValidation,
-} from "../validation/user-validation.js";
+import { ResponseError } from "../error/response-error.js";
+import { query } from "../util/db.js";
+import { registerUserValidation } from "../validation/user-validation.js";
+import { validate } from "../validation/validation.js";
 import bcrypt from "bcrypt";
 
 
 const register = async (request) => {
 
-    //1. cek validation >> jika error maka kirim pesan error, atau jika sesuai lanjutkan no.2
-    const user = validate(registerUserValidation, request);
-    //2. Get username di database
-    const countUser = await query('SELECT * FROM users WHERE username = ?', [user.username])
-    //3. Cek jika username sudah ada / === 1 maka kirim error 400, user sudah ada
-    //jika countUser = 0 atau belum ada maka lanjutkan no.4
-    if (countUser === 1) {
-        throw new ResponseError(400, "Username already exists");
-    }
+  //1. cek validation >> jika error maka kirim pesan error, atau jika sesuai lanjutkan no.2
+  const user = validate(registerUserValidation, request);
 
-    //4. encrypt dg bcrypt password agar tidak terlihat langsung di database
-    user.password = await bcrypt.hash(user.password, 10);
+  console.log("DATA VALIDATE:", user);
+  //2. Get username di database
+  const countUser = await query('SELECT * FROM users WHERE username = ?', [user.username])
+  //3. Cek jika username sudah ada / === 1 maka kirim error 400, user sudah ada
+  //jika countUser = 0 atau belum ada maka lanjutkan no.4
+  console.log("countUser:", countUser.length);
+  if (countUser.length === 1) {
+    throw new ResponseError(400, "Username already exists");
+  }
 
-    //5. buat user baru ke database
-    return await query('INSERT INTO users (username,password,name,token) VALUES (?, ?, ?,?)', [user.username, user.password, user.name, ""]);
+  //4. encrypt dg bcrypt password agar tidak terlihat langsung di database
+  user.password = await bcrypt.hash(user.password, 10);
 
-    //6. Get username di database
-    const rows = await query('SELECT * FROM users WHERE username = ?', [user.username])
-    //tampilkan hasilnya di log
-    console.log(`POST NEW DATA: ${JSON.stringify(rows)}`);
+  console.log("DATA POST:", user.username, user.password, user.name);
+  //5. buat user baru ke database
+  await query('INSERT INTO users (username,password,name,token) VALUES (?, ?, ?,?)', [user.username, user.password, user.name, ""]);
 
-    return rows[0]
+  //6. Get username di database
+  const rows = await query('SELECT * FROM users WHERE username = ?', [user.username])
+  //tampilkan hasilnya di log
+  console.log(`POST NEW DATA: ${JSON.stringify(rows)}`);
+
+  return rows[0]
 }
 
 export default {
-    register,
+  register,
 }
 ```
 
@@ -723,79 +728,91 @@ app.use(errorMiddleware)
 ```
 //src/test/user.test.js
 import supertest from "supertest";
-import {app} from "../src/application/web.js";
-import bcrypt from "bcrypt";
+import { removeTestUser } from "./test-util.js";
+import { app } from "../src/application.js";
+
 
 // Fungsi tes untuk register POST /api/users
 describe('Register POST /api/users', function () {
 
-    //1. setelah selesai test, hapus username: "test" di table/database
-    afterEach(async () => {
-        await removeTestUser();
-    })
+  //1a. sebelum test, hapus username: "test" di table/database
+  beforeEach(async () => {
+    await removeTestUser();
+  })
 
-    //2. register user baru
-    it('should can register new user', async () => {
-        const result = await supertest(web)
-            .post('/api/users')
-            .send({
-                username: 'test',
-                password: 'rahasia',
-                name: 'test'
-            });
+  //1b. setelah selesai test, hapus username: "test" di table/database
+  afterEach(async () => {
+    await removeTestUser();
+  })
 
-        expect(result.status).toBe(200);
-        expect(result.body.data.username).toBe("test");
-        expect(result.body.data.name).toBe("test");
-        expect(result.body.data.password).toBeUndefined();
-    });
+  //2. register user baru
+  it('should can register new user', async () => {
+    const result = await supertest(app)
+      //kirim post req /api/users
+      .post('/api/users')
+      //kirim req body (username,password,name)
+      .send({
+        username: 'test',
+        password: 'rahasia',
+        name: 'test'
+      });
+    //log hasilnya result
+    console.log("REGISTER :", result.body.data);
+    //status harus 200
+    expect(result.status).toBe(200);
+    //isi body.data.username adalah test
+    expect(result.body.data.username).toBe("test");
+    //isi body.data.name adalah test
+    expect(result.body.data.name).toBe("test");
+    expect(result.body.data.password).toBeDefined();
+  });
 
-    //3. test body request invalid
-    it('should reject if request is invalid', async () => {
-        const result = await supertest(web)
-            .post('/api/users')
-            .send({
-                username: '',
-                password: '',
-                name: ''
-            });
+  //3. test body request invalid
+  it('should reject if request is invalid', async () => {
+    const result = await supertest(app)
+      //kirim post req /api/users
+      .post('/api/users')
+      //kirim req body (username,password,name) >> kosong supaya error validasi
+      .send({
+        username: '',
+        password: '',
+        name: ''
+      });
+    //log hasilnya result
+    console.log("REGISTER INVALID :", result.status, result.body);
+    //log hasilnya result
+    expect(result.status).toBe(400);
+    expect(result.body.errors).toBeDefined();
+  });
 
-        logger.info(result.body);
+  //4. test user yang sudah terdaftar
+  it('should reject if username already registered', async () => {
+    let result = await supertest(app)
+      .post('/api/users')
+      .send({
+        username: 'test',
+        password: 'rahasia',
+        name: 'test'
+      });
+    //log hasilnya result
+    console.log("REGISTER 2 :", result.body);
+    expect(result.status).toBe(200);
+    expect(result.body.data.username).toBe("test");
+    expect(result.body.data.name).toBe("test");
+    expect(result.body.data.password).toBeDefined();
 
-        expect(result.status).toBe(400);
-        expect(result.body.errors).toBeDefined();
-    });
-
-    //4. test user yang sudah terdaftar
-    it('should reject if username already registered', async () => {
-        let result = await supertest(web)
-            .post('/api/users')
-            .send({
-                username: 'test',
-                password: 'rahasia',
-                name: 'test'
-            });
-
-        logger.info(result.body);
-
-        expect(result.status).toBe(200);
-        expect(result.body.data.username).toBe("test");
-        expect(result.body.data.name).toBe("test");
-        expect(result.body.data.password).toBeUndefined();
-
-        result = await supertest(web)
-            .post('/api/users')
-            .send({
-                username: 'test',
-                password: 'rahasia',
-                name: 'test'
-            });
-
-        logger.info(result.body);
-
-        expect(result.status).toBe(400);
-        expect(result.body.errors).toBeDefined();
-    });
+    result = await supertest(app)
+      .post('/api/users')
+      .send({
+        username: 'test',
+        password: 'rahasia',
+        name: 'test'
+      });
+    //log hasilnya result
+    console.log("REGISTER REGISTERED :", result.status, result.body);
+    expect(result.status).toBe(400);
+    expect(result.body.errors).toBeDefined();
+  });
 });
 
 ```
@@ -806,7 +823,7 @@ import { query } from "../src/util/db"
 
 
 export const removeTestUser = async () => {
-  await query('DELETE FROM users WHERE username =?', "test")
+  await query('DELETE FROM users WHERE username =?', ["test"])
 }
 ```
 
