@@ -248,6 +248,38 @@ describe('TEST GET No 1 dan No 3', () => {
 //npx jest app.test.js
 ```
 
+## Pada Episode ini kita akan mebuat :
+
+### 6. Membuat REGISTER User API
+
+### 7. Membuat LOGIN User API
+
+### 8. Membuat GET User API
+
+### 9. Membuat UPDATE User API
+
+### 10. Membuat LOGOUT User API
+
+### 11. Membuat CREATE Contact API
+
+### 12. Membuat GET Contact API
+
+### 13. Membuat UPDATE Contact API
+
+### 14. Membuat REMOVE Contact API
+
+### 15. Membuat SEARCH Contact API
+
+### 16. Membuat CREATE Address API
+
+### 17. Membuat GET Address API
+
+### 18. Membuat UPDATE Address API
+
+### 19. Membuat REMOVE Address API
+
+### 20. Membuat LIST Address API
+
 ## 4. Setting Database
 
 Membangun server MYSQL di VPS dengan docker compose
@@ -522,9 +554,9 @@ const register = async (req, res, next) => {
 // Fungsi tes untuk register POST /api/users
 describe('Register POST /api/users', function () {
     //1. setelah selesai test, hapus username: "test" di table/database
-    //2. register user baru
-    //3. test body request invalid
-    //4. test user yang sudah terdaftar
+    //2. test register user baru >> valid
+    //3. test reject body request >> invalid
+    //4. test reject user yang sudah terdaftar >> invalid
 })
 ```
 
@@ -669,7 +701,7 @@ export default {
 }
 ```
 
-### - e. Membuat Controller >> user-controller.js
+### - e. Membuat Register Controller >> user-controller.js
 
 Controller : meneruskan semua request dari route ke service, jika sukses kirim status 200 dan isi data
 
@@ -693,7 +725,7 @@ export default {
 }
 ```
 
-### - f. Membuat Route >> public-api.js
+### - f. Membuat Register Route >> public-api.js
 
 Membuat routing POST /api/users >> userController.register
 
@@ -723,7 +755,7 @@ app.use(publicRouter);
 app.use(errorMiddleware)
 ```
 
-### - g. Unit Test
+### - g. Unit Test Register
 
 ```
 //src/test/user.test.js
@@ -827,7 +859,7 @@ export const removeTestUser = async () => {
 }
 ```
 
-### h. Request.Test
+### - h. Request.Test Register
 
 ```
 ### 1a. Fungsi tes untuk register >> ERROR Validation
@@ -860,3 +892,376 @@ Content-Type: application/json
 "name": "test"
 }
 ```
+
+## 7. Membuat Login User API
+
+### Langkah - langkah :
+
+1. Endpoint dan response >> Pahami alamat End point dan bgmana responnya >> POST /api/users/login
+2. Validasi Request Body >> Data yg dikirim req.body (username,password) >> validasi dahulu isinya
+
+```
+const loginUserValidation = Joi.object({ username: ..., password: ..., });
+
+const validate = (schema, request) => {
+    const result = schema.validate(request)
+}
+```
+
+3. Service >> 1.CekValidationRequestBody, 2.GetUsername, 3.CekUsername, 4.CekPassword, 5.UpdateToken, 6.SendToken
+
+```
+const login = async (request) => {
+    //1. cek validation >> jika error maka kirim pesan error, atau jika sesuai lanjutkan no.2
+	const user = validate(loginUserValidation, request);
+    //2. Get username di database
+    //3. Cek jika username tdk ada / === 0 maka kirim error 401, user dn password salah
+    //jika countUser = 1 atau  ada maka lanjutkan no.4
+    //4. Cek Passord sesuai dengan yang tersimpan
+    //5. buat token dan update ke tabel user
+    //6. kirim token sebagai response
+}
+```
+
+4. Controller >> meneruskan semua request dari route (userController.login) ke service (userService.login(req.body)), jika sukses kirim status 200 dan isi data
+
+```
+const login = async (req, res, next) => {
+    try {
+        const result = await userService.login(req.body);
+    } catch (e) {
+        next(e);
+    }
+}
+```
+
+5. Route >> Membuat routing POST /api/users/login >> userController.login
+
+`publicRouter.post('/api/users/login', userController.login)`
+
+6. Unit Test >>
+
+```
+// Fungsi tes untuk login POST /api/users/login
+describe('login POST /api/users/login', function () {
+    //1. sebelum tes, buat user test
+    //2. setelah selesai test, hapus username: "test" di table/database
+    //3. login user dan password > valid
+    //3. test reject body request invalid
+    //4. test reject user/password yang invalid
+})
+```
+
+### - a. Endpoint : POST /api/users/login
+
+Request Body :
+
+```json
+{
+  "username": "edy",
+  "password": "rahasia"
+}
+```
+
+Response Body Success :
+
+```json
+{
+  "data": {
+    "token": "unique-token"
+  }
+}
+```
+
+Response Body Error :
+
+```json
+{
+  "errors": "Username or password wrong"
+}
+```
+
+### - b. Membuat Login Validation sesuaikan dengan database
+
+```
+//src/validation/user-validation.js
+
+....................
+const loginUserValidation = Joi.object({
+    username: Joi.string().max(100).required(),
+    password: Joi.string().max(100).required()
+});
+
+export {
+    registerUserValidation,
+    loginUserValidation,
+}
+```
+
+### - c. Membuat Login user-service
+
+`npm install uuid`
+
+Service >> 1.CekValidationRequestBody, 2.GetUsername, 3.CekUsername, 4.CekPassword, 5.UpdateToken, 6.SendToken
+
+```
+//src/service/user-service.js
+
+..........................
+const login = async (request) => {
+    //1. cek validation >> jika error maka kirim pesan error, atau jika sesuai lanjutkan no.2
+    const loginRequest = validate(loginUserValidation, request);
+    //2. Get username di database
+    let user = await query('SELECT * FROM users WHERE username = ?', [loginRequest.username])
+    //3. Cek jika username tdk ada / === 0 maka kirim error 401, user dn password salah
+    if (user.length === 0) {
+        throw new ResponseError(401, "Username or password wrong");
+    }
+    //4. Cek Passord sesuai dengan yang tersimpan
+    const isPasswordValid = await bcrypt.compare(loginRequest.password, user[0].password);
+    if (!isPasswordValid) {
+        throw new ResponseError(401, "Username or password wrong");
+    }
+    //5. buat token dan update ke tabel user
+    const token = uuid().toString()
+    await query('UPDATE users SET token = ? WHERE username = ?', [token, user.username]);
+    //6. Get username di database >> kirim token sebagai response
+    user = await query('SELECT * FROM users WHERE username = ?', [user.username])
+    const tokenUser = user[0].token
+    return {
+        data: {
+            token: tokenUser
+        },
+    }
+}
+
+export default {
+    register,
+    login,
+}
+```
+
+### - d. Membuat Login Controller >> user-controller.js
+
+```
+//src/controller//user-controller.js
+
+....................
+const login = async (req, res, next) => {
+    try {
+        const result = await userService.login(req.body);
+        res.status(200).json({
+            data: result
+        });
+    } catch (e) {
+        next(e);
+    }
+}
+```
+
+### - e. Membuat Login Route >> public-api.js
+
+```
+//src/route/public-api.js
+
+................
+publicRouter.post('/api/users/login', userController.login);
+```
+
+### - f. Unit Test Login
+
+```
+//src/test/user.test.js
+
+.............
+describe('POST /api/users/login', function () {
+    beforeEach(async () => {
+        await createTestUser();
+    });
+
+    afterEach(async () => {
+        await removeTestUser();
+    });
+
+    it('should can login', async () => {
+        const result = await supertest(web)
+            .post('/api/users/login')
+            .send({
+                username: "test",
+                password: "rahasia"
+            });
+
+        logger.info(result.body);
+
+        expect(result.status).toBe(200);
+        expect(result.body.data.token).toBeDefined();
+        expect(result.body.data.token).not.toBe("test");
+    });
+
+    it('should reject login if request is invalid', async () => {
+        const result = await supertest(web)
+            .post('/api/users/login')
+            .send({
+                username: "",
+                password: ""
+            });
+
+        logger.info(result.body);
+
+        expect(result.status).toBe(400);
+        expect(result.body.errors).toBeDefined();
+    });
+
+    it('should reject login if password is wrong', async () => {
+        const result = await supertest(web)
+            .post('/api/users/login')
+            .send({
+                username: "test",
+                password: "salah"
+            });
+
+        logger.info(result.body);
+
+        expect(result.status).toBe(401);
+        expect(result.body.errors).toBeDefined();
+    });
+
+    it('should reject login if username is wrong', async () => {
+        const result = await supertest(web)
+            .post('/api/users/login')
+            .send({
+                username: "salah",
+                password: "salah"
+            });
+
+        logger.info(result.body);
+
+        expect(result.status).toBe(401);
+        expect(result.body.errors).toBeDefined();
+    });
+});
+```
+
+```
+//src/test/test-util.js
+import { query } from "../src/util/db.js"
+
+.......................
+export const createTestUser = async () => {
+  await query('INSERT INTO users (username,password,name,token) VALUES (?, ?, ?,?)', [ "test", await bcrypt.hash("rahasia", 10),"test", "test"]);
+}
+```
+
+### - g. Request.Test Login
+
+```
+### 2a. Fungsi tes untuk login >> ERROR Validation
+POST http://localhost:3000/api/users/login
+Content-Type: application/json
+
+{
+"username": "",
+"password": ""
+}
+
+### 2b. Fungsi tes untuk login >> Valid
+POST http://localhost:3000/api/users/login
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia"
+}
+
+### 2c. Fungsi tes untuk login >> Password salah, User Benar
+POST http://localhost:3000/api/users/login
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "salah"
+}
+
+### 2d. Fungsi tes untuk login >> Password salah, User Salah
+POST http://localhost:3000/api/users/login
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "salah"
+}
+```
+
+## 8. Membuat GET User API
+
+### Langkah - langkah :
+
+### - a. GET Endpoint : POST /api/users/login
+
+### - b. Membuat GET Validation sesuaikan dengan database
+
+### - c. Membuat GET user-service
+
+### - d. Membuat GET Controller >> user-controller.js
+
+### - e. Membuat GET Route >> public-api.js
+
+### - f. Unit Test GET
+
+### - g. Request.Test GET
+
+## 9. Membuat UPDATE User API
+
+### Langkah - langkah :
+
+### - a. UPDATE Endpoint : POST /api/users/login
+
+### - b. Membuat UPDATE Validation sesuaikan dengan database
+
+### - c. Membuat UPDATE user-service
+
+### - d. Membuat UPDATE Controller >> user-controller.js
+
+### - e. Membuat UPDATE Route >> public-api.js
+
+### - f. Unit Test UPDATE
+
+### - g. Request.Test UPDATE
+
+## 10. Membuat LOGOUT User API
+
+### Langkah - langkah :
+
+### - a. LOGOUT Endpoint : POST /api/users/login
+
+### - b. Membuat LOGOUT Validation sesuaikan dengan database
+
+### - c. Membuat LOGOUT user-service
+
+### - d. Membuat LOGOUT Controller >> user-controller.js
+
+### - e. Membuat LOGOUT Route >> public-api.js
+
+### - f. Unit Test LOGOUT
+
+### - g. Request.Test LOGOUT
+
+## 11. Membuat CREATE Contact API
+
+## 12. Membuat GET Contact API
+
+## 13. Membuat UPDATE Contact API
+
+## 14. Membuat REMOVE Contact API
+
+## 15. Membuat SEARCH Contact API
+
+## 16. Membuat CREATE Address API
+
+## 17. Membuat GET Address API
+
+## 18. Membuat UPDATE Address API
+
+## 19. Membuat REMOVE Address API
+
+## 20. Membuat LIST Address API
