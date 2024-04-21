@@ -250,6 +250,142 @@ describe('TEST GET No 1 dan No 3', () => {
 
 ## 4. Setting Database
 
+Membangun server MYSQL di VPS dengan docker compose
+
+```
+#create folder /root/cmp_mysql_admin
+#create file docker-compose.yml
+
+version: "3"
+
+services:
+  # Database
+  db:
+    image: mysql:latest
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: patientsdb
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: super-password1
+      MYSQL_ROOT_PASSWORD: super-password1
+      SERVICE_TAGS: prod
+      SERVICE_NAME: mysqldb
+    networks:
+      - mysql-phpmyadmin
+
+  # phpmyadmin
+  phpmyadmin:
+    depends_on:
+      - db
+    image: phpmyadmin
+    restart: always
+    ports:
+      - "8090:80"
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: super-password1
+    networks:
+      - mysql-phpmyadmin
+
+networks:
+  mysql-phpmyadmin:
+
+volumes:
+  db_data:
+
+#docker compose up
+#docker compose down
+```
+
+Menggunakan CMD >> databse di VPS (Server Cloud)
+
+```
+ssh root@147.139.169.55
+>> password :
+docker ps -a
+>>CONTAINER ID   IMAGE             COMMAND                  CREATED        STATUS        >>PORTS                                                  NAMES
+>>db2e71ec05d6   mysql:latest      "docker-entrypoint.s…"   2 weeks ago    Up 2 weeks    0.0.0.0:3306->3306/tcp, :::3306->3306/>>tcp, 33060/tcp   cmp_mysql_admin_db_1
+docker exec -it cmp_mysql_admin_db_1 /bin/bash
+mysql -uroot -p
+>>password mysql :
+show databases;
+CREATE DATABASE dbsekolah;
+USE dbsekolah;
+
+CREATE TABLE users (
+username VARCHAR(100) PRIMARY KEY,
+password VARCHAR(100),
+name VARCHAR(100),
+token VARCHAR(100)
+);
+
+SELECT * FROM users;
+
+```
+
+Setting node JS MYSQL `npm install mysql2`
+
+```
+//src/util/config.js
+//simpan konfigurasi koneksi mysql server
+export const config = {
+  db: {
+    /* don't expose password or any sensitive info, done only for demo */
+    host: "147.139.169.55",
+    user: "root",
+    password: "super-password1",
+    database: "dbsekolah",
+    connectTimeout: 60000
+  },
+};
+
+```
+
+```
+//src/util/db.js
+//perintah query(sql, params)
+import mysql from "mysql2/promise";
+import { config } from "./config.js";
+
+
+export async function query(sql, params) {
+  const connection = await mysql.createConnection(config.db);
+  const [results,] = await connection.execute(sql, params);
+  await connection.end();
+  return results;
+}
+
+```
+
+```
+//test koneksi database
+//test/db.test.js
+import { query } from "../src/util/db.js";
+
+
+//TEST KONEKSI DB
+describe('TEST DATABASE', () => {
+  it('Koneksi databse >> query SELECT ', async () => {
+    //Hapus semua data
+    await query('DELETE FROM users')
+    //Select semua data dari tabel users
+    const rows = await query('SELECT * FROM users')
+    //tampilkan di log
+    console.log(`GET DATA:${JSON.stringify(rows)}`);
+    // Memeriksa panjang array
+    expect(rows.length).toBe(0);
+  })
+
+})
+
+//npx jest db.test.js
+```
+
 ## 5. Menangkap Error Middleware
 
 Energi terbesar programmer adalah menangani error atau bug.
@@ -330,7 +466,7 @@ import express from "express";
 
 .......................
 
-app.use(publicRouter);
+
 app.use(errorMiddleware)
 ```
 
@@ -428,6 +564,8 @@ Response Body Error :
 
 ### - c. Membuat Validation sesuaikan dengan database
 
+`npm install joi bcrypt`
+
 ```
 // pada pembuatan tabel di database kita menentukan masing2 kolom
 
@@ -442,7 +580,7 @@ token VARCHAR(100)
 Validation dengan Joi sesuaikan dengan table mysql
 
 ```
-//validation/user-validation.js
+//src/validation/user-validation.js
 import Joi from "joi";
 
 const registerUserValidation = Joi.object({
@@ -494,16 +632,13 @@ import {
 } from "../validation/user-validation.js";
 import bcrypt from "bcrypt";
 
+
 const register = async (request) => {
 
     //1. cek validation >> jika error maka kirim pesan error, atau jika sesuai lanjutkan no.2
     const user = validate(registerUserValidation, request);
     //2. Get username di database
-    const countUser = await prismaClient.user.count({
-        where: {
-            username: user.username
-        }
-    });
+    const countUser = await query('SELECT * FROM users WHERE username = ?', [user.username])
     //3. Cek jika username sudah ada / === 1 maka kirim error 400, user sudah ada
     //jika countUser = 0 atau belum ada maka lanjutkan no.4
     if (countUser === 1) {
@@ -514,13 +649,14 @@ const register = async (request) => {
     user.password = await bcrypt.hash(user.password, 10);
 
     //5. buat user baru ke database
-    return prismaClient.user.create({
-        data: user,
-        select: {
-            username: true,
-            name: true
-        }
-    });
+    return await query('INSERT INTO users (username,password,name,token) VALUES (?, ?, ?,?)', [user.username, user.password, user.name, ""]);
+
+    //6. Get username di database
+    const rows = await query('SELECT * FROM users WHERE username = ?', [user.username])
+    //tampilkan hasilnya di log
+    console.log(`POST NEW DATA: ${JSON.stringify(rows)}`);
+
+    return rows[0]
 }
 
 export default {
@@ -557,7 +693,7 @@ export default {
 Membuat routing POST /api/users >> userController.register
 
 ```
-//src/route// public-api.js
+//src/route/public-api.js
 import express from "express";
 import userController from "../controller/user-controller.js";
 
@@ -579,6 +715,7 @@ import express from "express";
 .........
 
 app.use(publicRouter);
+app.use(errorMiddleware)
 ```
 
 ### - g. Unit Test
@@ -665,16 +802,44 @@ describe('Register POST /api/users', function () {
 
 ```
 //src/test/test-util.js
+import { query } from "../src/util/db"
 
-import {prismaClient} from "../src/application/database.js";
-import bcrypt from "bcrypt";
 
 export const removeTestUser = async () => {
-    await prismaClient.user.deleteMany({
-        where: {
-            username: "test"
-        }
-    })
+  await query('DELETE FROM users WHERE username =?', "test")
+}
+```
+
+### h. Request.Test
+
+```
+### 1a. Fungsi tes untuk register >> ERROR Validation
+POST http://localhost:3000/api/users
+Content-Type: application/json
+
+{
+"username": "",
+"password": "",
+"name": ""
 }
 
+### 1b. Fungsi tes untuk register POST /api/users
+POST http://localhost:3000/api/users
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia",
+"name": "test"
+}
+
+### 1c. Fungsi tes untuk register >> ERROR Duplicate
+POST http://localhost:3000/api/users
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia",
+"name": "test"
+}
 ```

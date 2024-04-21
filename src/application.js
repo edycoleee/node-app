@@ -1,6 +1,8 @@
 //src/application.js
 //a. import library Framework express
 import express from "express";
+import { publicRouter } from "./route/public-api.js";
+import { errorMiddleware } from "./middleware/error-middleware.js";
 
 //b. membuat object app dari express function
 export const app = express();
@@ -16,3 +18,4 @@ app.get('/', (req, res) => {
 });
 
 app.use(publicRouter);
+app.use(errorMiddleware)

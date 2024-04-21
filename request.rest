@@ -1,3 +1,34 @@
 //request.rest
 ### 1. Contoh : Endpoint API : GET '/'
 GET http://localhost:3000/
+
+
+### 1a. Fungsi tes untuk register >> ERROR Validation
+POST http://localhost:3000/api/users
+Content-Type: application/json
+
+{
+"username": "",
+"password": "",
+"name": ""
+}
+
+### 1b. Fungsi tes untuk register POST /api/users
+POST http://localhost:3000/api/users
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia",
+"name": "test"
+}
+
+### 1c. Fungsi tes untuk register >> ERROR Duplicate
+POST http://localhost:3000/api/users
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia",
+"name": "test"
+}
