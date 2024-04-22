@@ -1196,7 +1196,71 @@ Content-Type: application/json
 
 ### Langkah - langkah :
 
-### - a. GET Endpoint : POST /api/users/login
+1. Endpoint dan response >> Pahami alamat End point dan bgmana responnya >> **GET /api/users/current, Headers : - Authorization : token** >>
+2. Router : Request mengirim token >> **userRouter.get** >> authMiddleware >> Select users token >> req.user = user
+   `userRouter.get('/api/users/current', userController.get);`
+3. Membuat Middleware **authMiddleware**
+   semua request yang menuju userRouter maka akan dilakukan pengecekan token, jika ditemukan next user-controller:get, jika tidak kirim errors: "Unauthorized"
+4. Controller **user-service:get** >> const username = req.user.username,
+   setelah authMiddleware sukses maka akan dilanjutkan ke controller bersama data user ke user-service:get
+
+5. Service user-service:get >> 1.CekValidationUsername, 2.GetUsername, 4.Send username,name
+
+```
+const login = async (request) => {
+    //1. cek validation >> jika error maka kirim pesan error, atau jika sesuai lanjutkan no.2
+	const user = validate(getUserValidation, username);
+    //2. Get username di database
+    //3. Cek jika username tdk ada / === 0 maka kirim error 404, user is not found
+    //jika countUser = 1 atau  ada maka lanjutkan no.4
+    //4. kirim username,name sebagai response
+}
+```
+
+6. Validasi username >> Data yg dikirim username >> validasi dahulu isinya
+
+```
+username = validate(getUserValidation, username);
+```
+
+7. Unit Test >>
+
+```
+// Fungsi tes untuk login POST /api/users/login
+describe('login POST /api/users/login', function () {
+    //1. sebelum tes, buat user test
+    //2. setelah selesai test, hapus username: "test" di table/database
+    //3. get user dg token yg valid
+    //4. get user dg token yg invalid
+})
+```
+
+### - a. GET Endpoint : GET /api/users/current
+
+Endpoint : GET /api/users/current
+
+Headers :
+
+- Authorization : token
+
+Response Body Success:
+
+```json
+{
+  "data": {
+    "username": "pzn",
+    "name": "Programmer Zaman Now"
+  }
+}
+```
+
+Response Body Error :
+
+```json
+{
+  "errors": "Unauthorized"
+}
+```
 
 ### - b. Membuat GET Validation sesuaikan dengan database
 
