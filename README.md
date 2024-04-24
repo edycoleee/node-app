@@ -1057,6 +1057,11 @@ const login = async (req, res, next) => {
         next(e);
     }
 }
+
+export default {
+  register,
+  login
+}
 ```
 
 ### - e. Membuat Login Route >> public-api.js
