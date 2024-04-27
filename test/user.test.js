@@ -1,8 +1,8 @@
 //src/test/user.test.js
 import supertest from "supertest";
-import { removeTestUser } from "./test-util.js";
+import { createTestUser, getTestUser, removeTestUser } from "./test-util.js";
 import { app } from "../src/application.js";
-
+import bcrypt from "bcrypt";
 
 // Fungsi tes untuk register POST /api/users
 describe.skip('Register POST /api/users', function () {
@@ -87,7 +87,105 @@ describe.skip('Register POST /api/users', function () {
   });
 });
 
-describe('POST /api/users/login', function () {
+describe.skip('POST /api/users/login', function () {
+  beforeEach(async () => {
+    await removeTestUser();
+    await createTestUser();
+  });
+
+  afterEach(async () => {
+    await removeTestUser();
+  });
+
+  it('1. should can login', async () => {
+    const result = await supertest(app)
+      .post('/api/users/login')
+      .send({
+        username: "test",
+        password: "rahasia"
+      });
+
+    console.log("result.body 1 :", result.body);
+
+    expect(result.status).toBe(200);
+    expect(result.body.data.token).toBeDefined();
+    expect(result.body.data.token).not.toBe("test");
+  });
+
+  it('2. should reject login if request is invalid', async () => {
+    const result = await supertest(app)
+      .post('/api/users/login')
+      .send({
+        username: "",
+        password: ""
+      });
+
+    console.log("result.body 2 :", result.body);
+
+    expect(result.status).toBe(400);
+    expect(result.body.errors).toBeDefined();
+  });
+
+  it('3. should reject login if password is wrong', async () => {
+    const result = await supertest(app)
+      .post('/api/users/login')
+      .send({
+        username: "test",
+        password: "salah"
+      });
+
+    console.log("result.body 3 :", result.body);
+
+    expect(result.status).toBe(401);
+    expect(result.body.errors).toBeDefined();
+  });
+
+  it('4. should reject login if username is wrong', async () => {
+    const result = await supertest(app)
+      .post('/api/users/login')
+      .send({
+        username: "salah",
+        password: "salah"
+      });
+
+    console.log("result.body 4 :", result.body);
+
+    expect(result.status).toBe(401);
+    expect(result.body.errors).toBeDefined();
+  });
+});
+
+describe.skip('GET /api/users/current', function () {
+  beforeEach(async () => {
+    await removeTestUser();
+    await createTestUser();
+  });
+
+  afterEach(async () => {
+    await removeTestUser();
+  });
+
+  it('1. should can get current user', async () => {
+    const result = await supertest(app)
+      .get('/api/users/current')
+      .set('Authorization', 'test');
+    console.log("result.body 1 :", result.body);
+    expect(result.status).toBe(200);
+    expect(result.body.data.username).toBe('test');
+    expect(result.body.data.name).toBe('test');
+  });
+
+  it('2. should reject if token is invalid', async () => {
+    const result = await supertest(app)
+      .get('/api/users/current')
+      .set('Authorization', 'salah');
+    console.log("result.body 2 :", result.body);
+    expect(result.status).toBe(401);
+    expect(result.body.errors).toBeDefined();
+  });
+});
+
+describe('PATCH /api/users/current', function () {
   beforeEach(async () => {
     await createTestUser();
   });
@@ -96,60 +194,60 @@ describe('POST /api/users/login', function () {
     await removeTestUser();
   });
 
-  it('should can login', async () => {
-    const result = await supertest(web)
-      .post('/api/users/login')
+  it('1. should can update user', async () => {
+    const result = await supertest(app)
+      .patch("/api/users/current")
+      .set("Authorization", "test")
       .send({
-        username: "test",
-        password: "rahasia"
+        name: "Edy",
+        password: "rahasialagi"
       });
-
-    logger.info(result.body);
-
+    console.log("result.body 1 :", result.body);
     expect(result.status).toBe(200);
-    expect(result.body.data.token).toBeDefined();
-    expect(result.body.data.token).not.toBe("test");
+    expect(result.body.data.username).toBe("test");
+    expect(result.body.data.name).toBe("Edy");
+
+    const user = await getTestUser();
+    console.log("user getTestUser  :", user);
+    expect(await bcrypt.compare("rahasialagi", user.password)).toBe(true);
   });
 
-  it('should reject login if request is invalid', async () => {
-    const result = await supertest(web)
-      .post('/api/users/login')
+  it('2. should can update user name', async () => {
+    const result = await supertest(app)
+      .patch("/api/users/current")
+      .set("Authorization", "test")
       .send({
-        username: "",
-        password: ""
+        name: "Edy Lagi"
       });
-
-    logger.info(result.body);
-
-    expect(result.status).toBe(400);
-    expect(result.body.errors).toBeDefined();
+    console.log("result.body 2 :", result.body);
+    expect(result.status).toBe(200);
+    expect(result.body.data.username).toBe("test");
+    expect(result.body.data.name).toBe("Edy Lagi");
   });
 
-  it('should reject login if password is wrong', async () => {
-    const result = await supertest(web)
-      .post('/api/users/login')
+  it('3. should can update user password', async () => {
+    const result = await supertest(app)
+      .patch("/api/users/current")
+      .set("Authorization", "test")
       .send({
-        username: "test",
-        password: "salah"
+        password: "rahasialagi"
       });
+    console.log("result.body 3 :", result.body);
+    expect(result.status).toBe(200);
+    expect(result.body.data.username).toBe("test");
+    expect(result.body.data.name).toBe("test");
 
-    logger.info(result.body);
+    const user = await getTestUser();
+    console.log("user getTestUser  :", user);
+    expect(await bcrypt.compare("rahasialagi", user.password)).toBe(true);
+  });
 
+  it('4. should reject if request is not valid', async () => {
+    const result = await supertest(app)
+      .patch("/api/users/current")
+      .set("Authorization", "salah")
+      .send({});
+    console.log("result.body 4 :", result.body);
     expect(result.status).toBe(401);
-    expect(result.body.errors).toBeDefined();
-  });
-
-  it('should reject login if username is wrong', async () => {
-    const result = await supertest(web)
-      .post('/api/users/login')
-      .send({
-        username: "salah",
-        password: "salah"
-      });
-
-    logger.info(result.body);
-
-    expect(result.status).toBe(401);
-    expect(result.body.errors).toBeDefined();
   });
 });

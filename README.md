@@ -360,6 +360,8 @@ SELECT * FROM users;
 
 ```
 
+`http://147.139.169.55:8090/`
+
 Setting node JS MYSQL `npm install mysql2`
 
 ```
@@ -504,6 +506,8 @@ app.use(errorMiddleware)
 ```
 
 ## 6. Membuat Register User API
+
+`ENDPOINT >> ROUTER >> PUBLIC-API >> CONTROLLER >> SERVICE`
 
 ### Langkah - langkah :
 
@@ -1006,38 +1010,48 @@ Service >> 1.CekValidationRequestBody, 2.GetUsername, 3.CekUsername, 4.CekPasswo
 
 ```
 //src/service/user-service.js
+import { ResponseError } from "../error/response-error.js";
+import { query } from "../util/db.js";
+import { loginUserValidation, registerUserValidation } from "../validation/user-validation.js";
+import { validate } from "../validation/validation.js";
+import bcrypt from "bcrypt";
+import { v4 as uuid } from "uuid";
 
-..........................
+........................
+
 const login = async (request) => {
-    //1. cek validation >> jika error maka kirim pesan error, atau jika sesuai lanjutkan no.2
-    const loginRequest = validate(loginUserValidation, request);
-    //2. Get username di database
-    let user = await query('SELECT * FROM users WHERE username = ?', [loginRequest.username])
-    //3. Cek jika username tdk ada / === 0 maka kirim error 401, user dn password salah
-    if (user.length === 0) {
-        throw new ResponseError(401, "Username or password wrong");
-    }
-    //4. Cek Passord sesuai dengan yang tersimpan
-    const isPasswordValid = await bcrypt.compare(loginRequest.password, user[0].password);
-    if (!isPasswordValid) {
-        throw new ResponseError(401, "Username or password wrong");
-    }
-    //5. buat token dan update ke tabel user
-    const token = uuid().toString()
-    await query('UPDATE users SET token = ? WHERE username = ?', [token, user.username]);
-    //6. Get username di database >> kirim token sebagai response
-    user = await query('SELECT * FROM users WHERE username = ?', [user.username])
-    const tokenUser = user[0].token
-    return {
-        data: {
-            token: tokenUser
-        },
-    }
+  //1. cek validation >> jika error maka kirim pesan error, atau jika sesuai lanjutkan no.2
+  const loginRequest = validate(loginUserValidation, request);
+
+  //2. Get username di database
+  let user = await query('SELECT * FROM users WHERE username = ?', [loginRequest.username])
+  //3. Cek jika username tdk ada / === 0 maka kirim error 401, user dn password salah
+  if (user.length === 0) {
+    throw new ResponseError(401, "Username or password wrong");
+  }
+  console.log(user);
+
+  //4. Cek Passord sesuai dengan yang tersimpan
+  const isPasswordValid = await bcrypt.compare(loginRequest.password, user[0].password);
+  if (!isPasswordValid) {
+    throw new ResponseError(401, "Username or password wrong");
+  }
+  console.log("isPasswordValid :", isPasswordValid);
+  //5. buat token dan update ke tabel user
+  const token = uuid().toString()
+
+  await query('UPDATE users SET token = ? WHERE username = ?', [token, user[0].username]);
+  //6. Get username di database >> kirim token sebagai response
+  user = await query('SELECT * FROM users WHERE username = ?', [user[0].username])
+  const tokenUser = user[0].token
+  return {
+    token: tokenUser
+  }
 }
 
 export default {
-    register,
-    login,
+  register,
+  login,
 }
 ```
 
@@ -1077,83 +1091,89 @@ publicRouter.post('/api/users/login', userController.login);
 
 ```
 //src/test/user.test.js
+import supertest from "supertest";
+import { createTestUser, removeTestUser } from "./test-util.js";
+import { app } from "../src/application.js";
 
 .............
 describe('POST /api/users/login', function () {
-    beforeEach(async () => {
-        await createTestUser();
-    });
+  beforeEach(async () => {
+    await removeTestUser();
+    await createTestUser();
+  });
 
-    afterEach(async () => {
-        await removeTestUser();
-    });
+  afterEach(async () => {
+    await removeTestUser();
+  });
 
-    it('should can login', async () => {
-        const result = await supertest(web)
-            .post('/api/users/login')
-            .send({
-                username: "test",
-                password: "rahasia"
-            });
+  it('1. should can login', async () => {
+    const result = await supertest(app)
+      .post('/api/users/login')
+      .send({
+        username: "test",
+        password: "rahasia"
+      });
 
-        logger.info(result.body);
+    console.log("result.body 1 :", result.body);
 
-        expect(result.status).toBe(200);
-        expect(result.body.data.token).toBeDefined();
-        expect(result.body.data.token).not.toBe("test");
-    });
+    expect(result.status).toBe(200);
+    expect(result.body.data.token).toBeDefined();
+    expect(result.body.data.token).not.toBe("test");
+  });
 
-    it('should reject login if request is invalid', async () => {
-        const result = await supertest(web)
-            .post('/api/users/login')
-            .send({
-                username: "",
-                password: ""
-            });
+  it('2. should reject login if request is invalid', async () => {
+    const result = await supertest(app)
+      .post('/api/users/login')
+      .send({
+        username: "",
+        password: ""
+      });
 
-        logger.info(result.body);
+    console.log("result.body 2 :", result.body);
 
-        expect(result.status).toBe(400);
-        expect(result.body.errors).toBeDefined();
-    });
+    expect(result.status).toBe(400);
+    expect(result.body.errors).toBeDefined();
+  });
 
-    it('should reject login if password is wrong', async () => {
-        const result = await supertest(web)
-            .post('/api/users/login')
-            .send({
-                username: "test",
-                password: "salah"
-            });
+  it('3. should reject login if password is wrong', async () => {
+    const result = await supertest(app)
+      .post('/api/users/login')
+      .send({
+        username: "test",
+        password: "salah"
+      });
 
-        logger.info(result.body);
+    console.log("result.body 3 :", result.body);
 
-        expect(result.status).toBe(401);
-        expect(result.body.errors).toBeDefined();
-    });
+    expect(result.status).toBe(401);
+    expect(result.body.errors).toBeDefined();
+  });
 
-    it('should reject login if username is wrong', async () => {
-        const result = await supertest(web)
-            .post('/api/users/login')
-            .send({
-                username: "salah",
-                password: "salah"
-            });
+  it('4. should reject login if username is wrong', async () => {
+    const result = await supertest(app)
+      .post('/api/users/login')
+      .send({
+        username: "salah",
+        password: "salah"
+      });
 
-        logger.info(result.body);
+    console.log("result.body 4 :", result.body);
 
-        expect(result.status).toBe(401);
-        expect(result.body.errors).toBeDefined();
-    });
+    expect(result.status).toBe(401);
+    expect(result.body.errors).toBeDefined();
+  });
 });
 ```
 
 ```
 //src/test/test-util.js
 import { query } from "../src/util/db.js"
+import bcrypt from "bcrypt";
 
-.......................
+...........
+
 export const createTestUser = async () => {
-  await query('INSERT INTO users (username,password,name,token) VALUES (?, ?, ?,?)', [ "test", await bcrypt.hash("rahasia", 10),"test", "test"]);
+  await query('INSERT INTO users (username,password,name,token) VALUES (?, ?, ?,?)', ["test", await bcrypt.hash("rahasia", 10), "test", "test"]);
 }
 ```
 
@@ -1198,6 +1218,8 @@ Content-Type: application/json
 ```
 
 ## 8. Membuat GET User API
+
+`ENDPOINT >> ROUTER >> AUTH-API >> AUTH-MIDDLEWARE >> CONTROLLER >> SERVICE`
 
 ### Langkah - langkah :
 
@@ -1253,8 +1275,8 @@ Response Body Success:
 ```json
 {
   "data": {
-    "username": "pzn",
-    "name": "Programmer Zaman Now"
+    "username": "edy",
+    "name": "Edy Kholid"
   }
 }
 ```
@@ -1269,33 +1291,516 @@ Response Body Error :
 
 ### - b. Membuat GET Validation sesuaikan dengan database
 
+```
+//src/validation/user-validation.js
+
+........
+
+const getUserValidation = Joi.string().max(100).required();
+
+export {
+  registerUserValidation,
+  loginUserValidation,
+  getUserValidation,
+}
+```
+
 ### - c. Membuat GET user-service
+
+```
+//src/service/user-service.js
+
+...............................................................
+
+// username >> berasal dari middleware
+const get = async (username) => {
+    username = validate(getUserValidation, username);
+    //2. Get username di database
+  let user = await query('SELECT * FROM users WHERE username = ?', [username])
+  //3. Cek jika username tdk ada / === 0 maka kirim error 401, user dn password salah
+  if (user.length === 0) {
+    throw new ResponseError(401, "Username or password wrong");
+  }
+  console.log(user);
+    return user;
+}
+
+export default {
+  register,
+  login,
+  get
+}
+```
 
 ### - d. Membuat GET Controller >> user-controller.js
 
-### - e. Membuat GET Route >> public-api.js
+```
+const get = async (req, res, next) => {
+  try {
+    //setelah menjalankan aut-middleware dg token yg dikirim maka akan mendapatkan username
+    console.log("req.user.username :", req.user.username);
+    const username = req.user.username;
+    //dengan username maka akan mendapatkan nama name
+    const result = await userService.get(username);
+    res.status(200).json({
+      data: result
+    });
+  } catch (e) {
+    next(e);
+  }
+}
+
+export default {
+  register,
+  login,
+  get
+}
+```
+
+### - e. Membuat GET Route >> api.js
+
+Sebelum router dijalankan>> program akan menjalankan userRouter.use(authMiddleware); >> untuk mendapatkan username
+
+```
+//src/route/api.js
+import express from "express";
+import userController from "../controller/user-controller.js";
+import { authMiddleware } from "../middleware/auth-middleware.js";
+
+const userRouter = new express.Router();
+userRouter.use(authMiddleware);
+
+// User API
+userRouter.get('/api/users/current', userController.get);
+
+// Contact API
+
+// Address API
+
+export {
+  userRouter
+}
+
+```
+
+```
+//src/application.js
+//a. import library Framework express
+import express from "express";
+import { publicRouter } from "./route/public-api.js";
+import { errorMiddleware } from "./middleware/error-middleware.js";
+import { userRouter } from "./route/api.js";
+
+........
+
+app.use(publicRouter);
+app.use(userRouter);
+app.use(errorMiddleware)
+```
+
+### - f. Membuat Auth Middleware
+
+```
+//src/middleware/auth-middleware.js
+import { query } from "../util/db";
+
+export const authMiddleware = async (req, res, next) => {
+    //1. mengambil token dari request body 'Authorization'
+    const token = req.get('Authorization');
+    //2. jika tidak mengirim token maka dianggap >> response 401, Unauthorized
+    if (!token) {
+        res.status(401).json({
+            errors: "Unauthorized"
+        }).end();
+    } else {
+        //jika ada token >> cari token di tabel database
+        const user = await query('SELECT * FROM users WHERE token = ?', [token])
+        console.log("user : ",user);
+        //jika tdk ditemukan maka user tidak ada >> response 401, Unauthorized
+        if (user.length === 0) {
+            res.status(401).json({
+                errors: "Unauthorized"
+            }).end();
+        } else {
+            //jika user ditemukan maka kirim data user ke proses berikutnya
+            req.user = user[0];
+            next();
+        }
+    }
+}
+```
 
 ### - f. Unit Test GET
 
+```
+describe('GET /api/users/current', function () {
+    beforeEach(async () => {
+        await removeTestUser();
+        await createTestUser();
+    });
+
+    afterEach(async () => {
+        await removeTestUser();
+    });
+
+    it('1. should can get current user', async () => {
+        const result = await supertest(app)
+            .get('/api/users/current')
+            .set('Authorization', 'test');
+        console.log("result.body 1 :", result.body);
+        expect(result.status).toBe(200);
+        expect(result.body.data.username).toBe('test');
+        expect(result.body.data.name).toBe('test');
+    });
+
+    it('2. should reject if token is invalid', async () => {
+        const result = await supertest(app)
+            .get('/api/users/current')
+            .set('Authorization', 'salah');
+        console.log("result.body 2 :", result.body);
+        expect(result.status).toBe(401);
+        expect(result.body.errors).toBeDefined();
+    });
+});
+```
+
 ### - g. Request.Test GET
+
+```
+### 3a. Fungsi tes untuk GET USER >> ERROR Validation
+GET http://localhost:3000/api/users/current
+Content-Type: application/json
+Authorization:
+
+{
+"username": "test",
+"password": "rahasia"
+}
+
+### 3b. Fungsi tes untuk GET USER >> Valid
+#REGISTER
+POST http://localhost:3000/api/users
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia",
+"name": "test"
+}
+
+#LOGIN >> token
+POST http://localhost:3000/api/users/login
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "salah"
+}
+
+#GET dengan token
+GET http://localhost:3000/api/users/current
+Content-Type: application/json
+Authorization: d6b46fdb-4063-4a4e-abd5-59738abc417a
+
+{
+"username": "",
+"password": ""
+}
+```
 
 ## 9. Membuat UPDATE User API
 
+`ENDPOINT >> ROUTER >> AUTH-API >> AUTH-MIDDLEWARE >> CONTROLLER >> SERVICE`
+
 ### Langkah - langkah :
 
-### - a. UPDATE Endpoint : POST /api/users/login
+### - a. UPDATE Endpoint : PATCH /api/users/current
 
-### - b. Membuat UPDATE Validation sesuaikan dengan database
+Endpoint : PATCH /api/users/current
 
-### - c. Membuat UPDATE user-service
+Headers :
+
+- Authorization : token
+
+Request Body :
+
+```json
+{
+  "name": "Edy Kholid", // optional
+  "password": "new password" // optional
+}
+```
+
+Response Body Success :
+
+```json
+{
+  "data": {
+    "username": "edy",
+    "name": "Edy Kholid"
+  }
+}
+```
+
+Response Body Error :
+
+```json
+{
+  "errors": "Name length max 100"
+}
+```
+
+### - a. Membuat UPDATE Route
+
+```
+userRouter.patch('/api/users/current', userController.update);
+```
 
 ### - d. Membuat UPDATE Controller >> user-controller.js
 
-### - e. Membuat UPDATE Route >> public-api.js
+```
+const update = async (req, res, next) => {
+  try {
+    //setelah menjalankan aut-middleware dg token yg dikirim maka akan mendapatkan username
+    const username = req.user.username;
+    //mengambil data body untuk update data ke tabel database
+    const request = req.body;
+    request.username = username;
+
+    const result = await userService.update(request);
+    res.status(200).json({
+      data: result
+    });
+  } catch (e) {
+    next(e);
+  }
+}
+
+export default {
+  register,
+  login,
+  get,
+  update
+}
+```
+
+### - c. Membuat UPDATE user-service
+
+```
+//src/service/user-service.js
+import { ResponseError } from "../error/response-error.js";
+import { query } from "../util/db.js";
+import { getUserValidation, loginUserValidation, registerUserValidation, updateUserValidation } from "../validation/user-validation.js";
+
+................................................................
+
+const update = async (request) => {
+  const user = validate(updateUserValidation, request);
+
+  //2. Get username di database
+  const DataUser = await query('SELECT username,name FROM users WHERE username = ?', [user.username])
+  //3. Cek jika username tdk ada / === 0 maka kirim error 401, user dn password salah
+  if (DataUser.length === 0) {
+    throw new ResponseError(404, "user is not found");
+  }
+  console.log("DataUser :", DataUser);
+
+  const data = {};
+  if (user.name) {
+    data.name = user.name;
+  }
+  if (user.password) {
+    data.password = await bcrypt.hash(user.password, 10);
+  }
+  console.log("data :", data);
+  // Buat string query update
+  const updateQuery = 'UPDATE users SET ' + Object.keys(data).map(key => `${key} = ?`).join(', ') + ' WHERE username = ?';
+  const updateValues = [...Object.values(data), user.username];
+
+  //5. buat user baru ke database
+  await query(updateQuery, updateValues);
+  //6. Get username di database
+  const rows = await query('SELECT username,name FROM users WHERE username = ?', [user.username])
+  //tampilkan hasilnya di log
+  console.log(`POST NEW DATA: ${JSON.stringify(rows)}`);
+  return rows[0]
+
+}
+
+export default {
+  register,
+  login,
+  get,
+  update
+}
+```
+
+### - b. Membuat UPDATE Validation sesuaikan dengan database
+
+```
+const updateUserValidation = Joi.object({
+  username: Joi.string().max(100).required(),
+  password: Joi.string().max(100).optional(),
+  name: Joi.string().max(100).optional()
+})
+
+export {
+  registerUserValidation,
+  loginUserValidation,
+  getUserValidation,
+  updateUserValidation
+}
+```
 
 ### - f. Unit Test UPDATE
 
+```
+//src/test/test-util.js
+
+................................................................
+
+export const getTestUser = async () => {
+  //select user where
+  const user = await query('SELECT * FROM users WHERE username = ?', ["test"])
+  //yang di kembalikan [{}], array ke 0
+  return user[0]
+}
+```
+
+```
+//src/test/user.test.js
+import supertest from "supertest";
+import { createTestUser, getTestUser, removeTestUser } from "./test-util.js";
+import { app } from "../src/application.js";
+import bcrypt from "bcrypt";
+
+................................................................
+
+describe('PATCH /api/users/current', function () {
+  beforeEach(async () => {
+    await createTestUser();
+  });
+
+  afterEach(async () => {
+    await removeTestUser();
+  });
+
+  it('1. should can update user', async () => {
+    const result = await supertest(app)
+      .patch("/api/users/current")
+      .set("Authorization", "test")
+      .send({
+        name: "Edy",
+        password: "rahasialagi"
+      });
+    console.log("result.body 1 :", result.body);
+    expect(result.status).toBe(200);
+    expect(result.body.data.username).toBe("test");
+    expect(result.body.data.name).toBe("Edy");
+
+    const user = await getTestUser();
+    console.log("user getTestUser  :", user);
+    expect(await bcrypt.compare("rahasialagi", user.password)).toBe(true);
+  });
+
+  it('2. should can update user name', async () => {
+    const result = await supertest(app)
+      .patch("/api/users/current")
+      .set("Authorization", "test")
+      .send({
+        name: "Edy Lagi"
+      });
+    console.log("result.body 2 :", result.body);
+    expect(result.status).toBe(200);
+    expect(result.body.data.username).toBe("test");
+    expect(result.body.data.name).toBe("Edy Lagi");
+  });
+
+  it('3. should can update user password', async () => {
+    const result = await supertest(app)
+      .patch("/api/users/current")
+      .set("Authorization", "test")
+      .send({
+        password: "rahasialagi"
+      });
+    console.log("result.body 3 :", result.body);
+    expect(result.status).toBe(200);
+    expect(result.body.data.username).toBe("test");
+    expect(result.body.data.name).toBe("test");
+
+    const user = await getTestUser();
+    console.log("user getTestUser  :", user);
+    expect(await bcrypt.compare("rahasialagi", user.password)).toBe(true);
+  });
+
+  it('4. should reject if request is not valid', async () => {
+    const result = await supertest(app)
+      .patch("/api/users/current")
+      .set("Authorization", "salah")
+      .send({});
+    console.log("result.body 4 :", result.body);
+    expect(result.status).toBe(401);
+  });
+});
+```
+
 ### - g. Request.Test UPDATE
+
+```
+### 4a. Fungsi tes untuk PATCH USER name password>> VALID
+### REGISTER
+POST http://localhost:3000/api/users
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia",
+"name": "test"
+}
+
+
+### LOGIN >> token
+POST http://localhost:3000/api/users/login
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia"
+}
+
+### PATCH
+PATCH http://localhost:3000/api/users/current
+Content-Type: application/json
+Authorization: 24f95c56-ec36-4773-bab3-b447e0be572c
+
+{
+"name": "Edy",
+"password": "rahasialagi"
+}
+
+### 4b. Fungsi tes untuk PATCH USER name >> VALID
+PATCH http://localhost:3000/api/users/current
+Content-Type: application/json
+Authorization: 24f95c56-ec36-4773-bab3-b447e0be572c
+
+{
+"name": "Edy Lagi"
+}
+
+### 4c. Fungsi tes untuk PATCH USER name >> VALID
+PATCH http://localhost:3000/api/users/current
+Content-Type: application/json
+Authorization: 24f95c56-ec36-4773-bab3-b447e0be572c
+
+{
+"password": "rahasialagi"
+}
+
+### 4c. Fungsi tes untuk PATCH USER name >> VALID
+PATCH http://localhost:3000/api/users/current
+Content-Type: application/json
+Authorization: salah
+```
 
 ## 10. Membuat LOGOUT User API
 

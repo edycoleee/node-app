@@ -46,7 +46,7 @@ Content-Type: application/json
 POST http://localhost:3000/api/users/login
 Content-Type: application/json
 
-{
+{ 
 "username": "test",
 "password": "rahasia"
 }
@@ -68,3 +68,98 @@ Content-Type: application/json
 "username": "test",
 "password": "salah"
 }
+
+### 3a. Fungsi tes untuk GET USER >> ERROR Validation
+GET http://localhost:3000/api/users/current
+Content-Type: application/json
+Authorization:  
+
+{
+"username": "test",
+"password": "rahasia"
+}
+
+### 3b. Fungsi tes untuk GET USER >> Valid
+### REGISTER
+POST http://localhost:3000/api/users
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia",
+"name": "test"
+}
+
+
+### LOGIN >> token
+POST http://localhost:3000/api/users/login
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "salah"
+}
+
+### GET dengan token
+GET http://localhost:3000/api/users/current
+Content-Type: application/json
+Authorization: d6b46fdb-4063-4a4e-abd5-59738abc417a
+
+{ 
+"username": "",
+"password": ""
+}
+
+### 4a. Fungsi tes untuk PATCH USER name password>> VALID
+### REGISTER
+POST http://localhost:3000/api/users
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia",
+"name": "test"
+}
+
+
+### LOGIN >> token
+POST http://localhost:3000/api/users/login
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia"
+}
+
+### PATCH
+PATCH http://localhost:3000/api/users/current
+Content-Type: application/json
+Authorization: 24f95c56-ec36-4773-bab3-b447e0be572c 
+
+{
+"name": "Edy",
+"password": "rahasialagi"
+}
+
+### 4b. Fungsi tes untuk PATCH USER name >> VALID
+PATCH http://localhost:3000/api/users/current
+Content-Type: application/json
+Authorization: 24f95c56-ec36-4773-bab3-b447e0be572c 
+
+{
+"name": "Edy Lagi"
+}
+
+### 4c. Fungsi tes untuk PATCH USER name >> VALID
+PATCH http://localhost:3000/api/users/current
+Content-Type: application/json
+Authorization: 24f95c56-ec36-4773-bab3-b447e0be572c 
+
+{
+"password": "rahasialagi"
+}
+
+### 4c. Fungsi tes untuk PATCH USER name >> VALID
+PATCH http://localhost:3000/api/users/current
+Content-Type: application/json
+Authorization: salah 

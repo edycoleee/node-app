@@ -25,7 +25,41 @@ const login = async (req, res, next) => {
   }
 }
 
+const get = async (req, res, next) => {
+  try {
+    //setelah menjalankan aut-middleware dg token yg dikirim maka akan mendapatkan username
+    console.log("req.user.username :", req.user.username);
+    const username = req.user.username;
+    //dengan username maka akan mendapatkan nama name
+    const result = await userService.get(username);
+    res.status(200).json({
+      data: result
+    });
+  } catch (e) {
+    next(e);
+  }
+}
+
+const update = async (req, res, next) => {
+  try {
+    //setelah menjalankan aut-middleware dg token yg dikirim maka akan mendapatkan username
+    const username = req.user.username;
+    //mengambil data body untuk update data ke tabel database
+    const request = req.body;
+    request.username = username;
+
+    const result = await userService.update(request);
+    res.status(200).json({
+      data: result
+    });
+  } catch (e) {
+    next(e);
+  }
+}
+
 export default {
   register,
-  login
+  login,
+  get,
+  update
 }
