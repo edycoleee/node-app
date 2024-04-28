@@ -106,9 +106,30 @@ const update = async (request) => {
 
 }
 
+const logout = async (username) => {
+  console.log("username : ", username);
+  username = validate(getUserValidation, username);
+  //2. Get username di database
+  const DataUser = await query('SELECT username,name FROM users WHERE username = ?', [username])
+  //3. Cek jika username tdk ada / === 0 maka kirim error 401, user dn password salah
+  if (DataUser.length === 0) {
+    throw new ResponseError(404, "user is not found");
+  }
+  console.log("DataUser :", DataUser);
+
+  await query('UPDATE users SET token = ? WHERE username = ?', [null, username]);
+  //6. Get username di database >> kirim token sebagai response
+  const user = await query('SELECT * FROM users WHERE username = ?', [username])
+
+  return {
+    username: user[0].username
+  }
+}
+
 export default {
   register,
   login,
   get,
-  update
+  update,
+  logout
 }

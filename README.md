@@ -1804,21 +1804,181 @@ Authorization: salah
 
 ## 10. Membuat LOGOUT User API
 
+`ENDPOINT >> ROUTER >> AUTH-API >> AUTH-MIDDLEWARE >> CONTROLLER >> SERVICE`
+
 ### Langkah - langkah :
 
 ### - a. LOGOUT Endpoint : POST /api/users/login
 
-### - b. Membuat LOGOUT Validation sesuaikan dengan database
+## Logout User API
 
-### - c. Membuat LOGOUT user-service
+Endpoint : DELETE /api/users/logout
+
+Headers :
+
+- Authorization : token
+
+Response Body Success :
+
+```json
+{
+  "data": "OK"
+}
+```
+
+Response Body Error :
+
+```json
+{
+  "errors": "Unauthorized"
+}
+```
+
+### - e. Membuat LOGOUT Route >> api.js
+
+```
+userRouter.delete('/api/users/logout', userController.logout);
+```
 
 ### - d. Membuat LOGOUT Controller >> user-controller.js
 
-### - e. Membuat LOGOUT Route >> public-api.js
+```
+const logout = async (req, res, next) => {
+    try {
+        await userService.logout(req.user.username);
+        res.status(200).json({
+            data: "OK"
+        });
+    } catch (e) {
+        next(e);
+    }
+}
+
+export default {
+    register,
+    login,
+    get,
+    update,
+    logout
+}
+
+```
+
+### - c. Membuat LOGOUT user-service
+
+```
+const logout = async (username) => {
+  username = validate(getUserValidation, username);
+
+  //2. Get username di database
+  const DataUser = await query('SELECT username,name FROM users WHERE username = ?', [user.username])
+  //3. Cek jika username tdk ada / === 0 maka kirim error 401, user dn password salah
+  if (DataUser.length === 0) {
+    throw new ResponseError(404, "user is not found");
+  }
+  console.log("DataUser :", DataUser);
+
+
+  await query('UPDATE users SET token = ? WHERE username = ?', ["", username]);
+  //6. Get username di database >> kirim token sebagai response
+  const user = await query('SELECT * FROM users WHERE username = ?', username)
+  const username = user[0].username
+  return {
+    username: username
+  }
+}
+
+export default {
+    register,
+    login,
+    get,
+    update,
+    logout
+}
+
+```
+
+### - b. Membuat LOGOUT Validation sesuaikan dengan database
+
+Yang di validasi adalah username maka Memakai : getUserValidation
 
 ### - f. Unit Test LOGOUT
 
+```
+describe('DELETE /api/users/logout', function () {
+    beforeEach(async () => {
+        await createTestUser();
+    });
+
+    afterEach(async () => {
+        await removeTestUser();
+    });
+
+    it('1. should can logout', async () => {
+        const result = await supertest(app)
+            .delete('/api/users/logout')
+            .set('Authorization', 'test');
+        console.log("result.body 1 :", result.body);
+        expect(result.status).toBe(200);
+        expect(result.body.data).toBe("OK");
+
+        const user = await getTestUser();
+        expect(user.token).toBeNull();
+    });
+
+    it('2. should reject logout if token is invalid', async () => {
+        const result = await supertest(app)
+            .delete('/api/users/logout')
+            .set('Authorization', 'salah');
+        console.log("result.body 2 :", result.body);
+        expect(result.status).toBe(401);
+    });
+});
+```
+
 ### - g. Request.Test LOGOUT
+
+```
+### 5a. Fungsi tes untuk DELETE USER name password>> VALID
+### REGISTER
+POST http://localhost:3000/api/users
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia",
+"name": "test"
+}
+
+
+### LOGIN >> token
+POST http://localhost:3000/api/users/login
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia"
+}
+
+### LOGOUT
+DELETE http://localhost:3000/api/users/logout
+Content-Type: application/json
+Authorization: e20cc8b8-212e-44b5-b8b0-c370d0bac357
+
+{
+"username": "test"
+}
+
+### 5b. Fungsi tes untuk PATCH USER name >> VALID
+DELETE http://localhost:3000/api/users/logout
+Content-Type: application/json
+Authorization: salah
+
+{
+"username": "test"
+}
+
+```
 
 ## 11. Membuat CREATE Contact API
 

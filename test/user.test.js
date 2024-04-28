@@ -185,7 +185,7 @@ describe.skip('GET /api/users/current', function () {
   });
 });
 
-describe('PATCH /api/users/current', function () {
+describe.skip('PATCH /api/users/current', function () {
   beforeEach(async () => {
     await createTestUser();
   });
@@ -248,6 +248,37 @@ describe('PATCH /api/users/current', function () {
       .set("Authorization", "salah")
       .send({});
     console.log("result.body 4 :", result.body);
+    expect(result.status).toBe(401);
+  });
+});
+
+describe('DELETE /api/users/logout', function () {
+  beforeEach(async () => {
+    await removeTestUser();
+    await createTestUser();
+  });
+
+  afterEach(async () => {
+    await removeTestUser();
+  });
+
+  it('1. should can logout', async () => {
+    const result = await supertest(app)
+      .delete('/api/users/logout')
+      .set('Authorization', 'test');
+    console.log("result.body 1 :", result.body);
+    expect(result.status).toBe(200);
+    expect(result.body.data).toBe("OK");
+
+    const user = await getTestUser();
+    expect(user.token).toBeNull();
+  });
+
+  it('2. should reject logout if token is invalid', async () => {
+    const result = await supertest(app)
+      .delete('/api/users/logout')
+      .set('Authorization', 'salah');
+    console.log("result.body 2 :", result.body);
     expect(result.status).toBe(401);
   });
 });

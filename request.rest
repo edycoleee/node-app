@@ -159,7 +159,46 @@ Authorization: 24f95c56-ec36-4773-bab3-b447e0be572c
 "password": "rahasialagi"
 }
 
-### 4c. Fungsi tes untuk PATCH USER name >> VALID
+### 4c. Fungsi tes untuk PATCH USER name >> INVALID
 PATCH http://localhost:3000/api/users/current
 Content-Type: application/json
 Authorization: salah 
+
+### 5a. Fungsi tes untuk DELETE USER name password>> VALID
+### REGISTER 
+POST http://localhost:3000/api/users
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia",
+"name": "test"
+}
+
+
+### LOGIN >> token
+POST http://localhost:3000/api/users/login
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia"
+}
+
+### LOGOUT
+DELETE http://localhost:3000/api/users/logout
+Content-Type: application/json
+Authorization: e20cc8b8-212e-44b5-b8b0-c370d0bac357 
+
+{
+"username": "test"
+}
+
+### 5b. Fungsi tes untuk PATCH USER name >> VALID
+DELETE http://localhost:3000/api/users/logout
+Content-Type: application/json
+Authorization: salah
+
+{
+"username": "test"
+}
