@@ -2,8 +2,18 @@
 ### 1. Contoh : Endpoint API : GET '/'
 GET http://localhost:3000/
 
+### 1a. Fungsi tes untuk register POST /api/users >> VALID
+POST http://localhost:3000/api/users
+Content-Type: application/json
 
-### 1a. Fungsi tes untuk register >> ERROR Validation
+{
+"username": "test",
+"password": "rahasia",
+"name": "test"
+}
+
+
+### 1b. Fungsi tes untuk register >> ERROR Validation
 POST http://localhost:3000/api/users
 Content-Type: application/json
 
@@ -13,15 +23,6 @@ Content-Type: application/json
 "name": ""
 }
 
-### 1b. Fungsi tes untuk register POST /api/users
-POST http://localhost:3000/api/users
-Content-Type: application/json
-
-{
-"username": "test",
-"password": "rahasia",
-"name": "test"
-}
 
 ### 1c. Fungsi tes untuk register >> ERROR Duplicate 
 POST http://localhost:3000/api/users
@@ -194,7 +195,7 @@ Authorization: e20cc8b8-212e-44b5-b8b0-c370d0bac357
 "username": "test"
 }
 
-### 5b. Fungsi tes untuk PATCH USER name >> VALID
+### 5b. Fungsi tes untuk PATCH USER name >> VALID 
 DELETE http://localhost:3000/api/users/logout
 Content-Type: application/json
 Authorization: salah
@@ -202,3 +203,20 @@ Authorization: salah
 {
 "username": "test"
 }
+
+### 1a. Fungsi tes untuk POST Contoh>> VALID
+POST http://localhost:3000/api/contoh/public
+Content-Type: application/json
+
+{
+"username": "edy"
+}
+
+### 1b. Fungsi tes untuk POST Contoh >> INVALID
+POST http://localhost:3000/api/contoh/public
+Content-Type: application/json
+
+{
+"username": "test"
+}
+

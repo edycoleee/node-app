@@ -27,6 +27,7 @@ const register = async (request) => {
   const rows = await query('SELECT * FROM users WHERE username = ?', [user.username])
   //tampilkan hasilnya di log
   console.log(`POST NEW DATA: ${JSON.stringify(rows)}`);
+  //7. return value sebagai response body
   return rows[0]
 }
 

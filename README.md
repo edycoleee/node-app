@@ -505,21 +505,241 @@ import express from "express";
 app.use(errorMiddleware)
 ```
 
+## 6a. Mempelajari Alur API
+
+### - a. Endpoint : POST /api/contoh/public
+
+Request Body :
+
+```json
+{
+  "username": "edy"
+}
+```
+
+Response Body Success :
+
+```json
+{
+  "data": {
+    "username": "edy",
+    "name": "edy kholid"
+  }
+}
+```
+
+Response Body Error :
+
+```json
+{
+  "errors": "Username Not edy"
+}
+```
+
+ALUR : ENDPOINT >> ROUTER >> CONTROLLER >> SERVICE >> VALIDATION >> UNIT TEST >> .REST
+
+UNTUK MEMPERMUDAH DALAM IMPORT EXPORT MODULE MAKA LEBIH MUDAH DI BUAT ALUR MUNDUR :
+
+#### VALIDATION >> SERVICE >> CONTROLLER >> ROUTER , .REST, UNIT TEST
+
+#### membuat folder : validation, service, controller, route
+
+### - a. VALIDATION
+
+Validasi dilakukan untuk memastikan isi dari request body berisi variable username yang dikirim adalah string dn panjang max 100. Validasi akan mengembalikan nilai variable:
+
+1. jika hasil validasi sesuai yang diharapkan >> Variable yang dikirim dikembalikan lagi >> ditangkap utk dilanjutkan proses berikutnya,
+2. jika hasil validasi tidak sesuai maka akan mengirimkan error dan keterangan apa errornya >> ditangkap dan kirimkan response error
+
+```
+//src/validation/contoh-validation.js
+import Joi from "joi";
+
+//Validasi username pada POST /api/contoh/public
+const postContohValidation = Joi.string().max(100).required();
+
+export {
+  postContohValidation,
+}
+```
+
+### - b. SERVICE
+
+Service adalah `bagian utama` proses berjalannya sebuah operasi request menjadi response, semua proses logika berada disini, pengecekan validasi,pengambilan database, proses logika sampai memberikan response
+
+Service : Request Body >> VALIDASI >> LOGIKA PROGRAM >> Response Body Error, Response Body Success
+
+```
+//src/service/contoh-service.js
+import { ResponseError } from "../error/response-error.js";
+import { postContohValidation } from "../validation/contoh-validation.js";
+import { validate } from "../validation/validation.js";
+
+//contoh alur service pada public api
+const contoh = async (request) => {
+  //1. VALIDASI >> jika error maka kirim pesan error, atau jika sesuai lanjutkan no.2
+  //yang di validasi : request body >> username
+  const user = validate(postContohValidation, request.username);
+  console.log("DATA VALIDATE:", user);
+  //2a. LOGIKA PROGRAM jika username tdk edy maka kirim Response Body Error
+  if (user != "edy") {
+    throw new ResponseError(400, "Username not edy");
+  }
+  //2b. LOGIKA PROGRAM jika username edy maka kirim response Body Success
+  return {
+    username: user,
+    name: "edy kholid"
+  }
+}
+
+export default {
+  contoh
+}
+```
+
+### - c. CONTROLLER
+
+Controller adalah fungsi yang menangkap request kemudian melanjutkan ke service dan menangkap error yang terjadi saat proses di service, hasil dari service kemudian dirim sebagai response,
+format respon terakhir ke client dari controller
+
+```
+//src/controller//contoh-controller.js
+import contohService from "../service/contoh-service.js";
+
+const contoh = async (req, res, next) => {
+  console.log("REQUEST CONTROLLER : ", req.body);
+  try {
+    //1. Kirim request dari router ke service
+    const result = await contohService.contoh(req.body);
+    //2. Hasil service kirim sebagai response data
+    res.status(200).json({
+      data: result
+    });
+    //3. Tangkap error kirim sebagai response error
+  } catch (e) {
+    next(e);
+  }
+}
+
+export default {
+  contoh
+}
+```
+
+### - d. ROUTER
+
+Router menangkap awal request method (get,post,patch,delete) berserta url (/,/api,dll) untuk di teruskan ke controller. Pada sistem yang menggunakan autentikasi/password request ini diteruskan ke middleware autentikasi baru ke controller.
+
+```
+//src/route/public-api.js
+import express from "express";
+import contohController from "../controller/contoh-controller.js";
+
+//contoh post alur public api
+publicRouter.post('/api/contoh/public', contohController.contoh);
+
+```
+
+### - e. .REST
+
+Fungsi test menggunakan extensi bawaan visual studio code, lebih sederhana dan mudah, tap tidak bisa otomatis dalam pengetesannya
+
+```
+### 1a. Fungsi tes untuk POST Contoh>> VALID
+POST http://localhost:3000/api/contoh/public
+Content-Type: application/json
+
+{
+"username": "edy"
+}
+
+### 1b. Fungsi tes untuk POST Contoh >> INVALID
+POST http://localhost:3000/api/contoh/public
+Content-Type: application/json
+
+{
+"username": "test"
+}
+
+```
+
+### - f. UNIT TEST
+
+Fungsi test yang banyak fungsi dan fitur, sehingga bisa melakukan test secara otomatis dan memudahkan dalam pembuatan aplikasi node.js
+
+```
+//test/contoh.test.js
+const request = require('supertest');
+const { app } = require('../src/application');
+
+//a. fungsi testing : describe >> it
+describe('TEST CONTOH PUBLIC API', () => {
+
+  //1. TEST Valid username : edy  >> POST http://localhost:3000/api/contoh/public
+  it('1a TEST POST http://localhost:3000/api/contoh/public', async () => {
+    //a. kirim request app, POST "/api/contoh/public" dan tangkap hasilnya ke variable response
+    const response = await request(app)
+      //request, POST "/api/contoh/public"
+      .post('/api/contoh/public')
+      //request body
+      .send({
+        username: "edy"
+      })
+    console.log("result.body 1a :", response.body);
+    //b. Jika request berhasil ke server maka status response = 200
+    expect(response.status).toBe(200);
+    //c. Periksa isi response body seharusnya data.username adalah edy
+    expect(response.body.data.username).toBe("edy");
+    expect(response.body.data.name).toBe("edy kholid");
+  });
+
+  //1b. TEST Tidak Valid username : test  >> POST http://localhost:3000/api/contoh/public
+  it('1b TEST POST http://localhost:3000/api/contoh/public', async () => {
+    //a. kirim request app, POST "/api/contoh/public" dan tangkap hasilnya ke variable response
+    const response = await request(app)
+      //request, POST "/api/contoh/public"
+      .post('/api/contoh/public')
+      //request body
+      .send({
+        username: "test"
+      })
+    console.log("result.body 1b :", response.body);
+    //b. Jika request invalid maka status response = 400
+    expect(response.status).toBe(400);
+    //c. Periksa isi error seharusnya 'Username not edy'
+    expect(response.body.errors).toBeDefined();
+    expect(response.body.errors).toBe('Username not edy');
+  });
+
+});
+
+//jalankan test
+//npx jest app.test.js
+```
+
 ## 6. Membuat Register User API
 
-`ENDPOINT >> ROUTER >> PUBLIC-API >> CONTROLLER >> SERVICE`
+`ENDPOINT >> ROUTER >> PUBLIC-API >> CONTROLLER >> SERVICE >> VALIDATION`
 
 ### Langkah - langkah :
 
-1. Endpoint dan response >> Pahami alamat End point dan bgmana responnya >> POST /api/users
+1. 1. Endpoint dan response >> Pahami alamat End point >> Apa Request Method dan Body dan bgmana responnya : Error dan Success >> POST /api/users
 2. Validasi Request Body >> Data yg dikirim req.body (username,password,name) >> validasi dahulu isinya
 
 ```
+//schema
 const registerUserValidation = Joi.object({ username: ..., password: ..., name: ...});
 
+//validation proses (schema, request) >> error/result.value
 const validate = (schema, request) => {
-    const result = schema.validate(request)
+  const result = schema.validate(request)
+  if (result.error) {
+    throw new ResponseError(400, result.error.message);
+  } else {
+    return result.value;
+  }
 }
+
 ```
 
 3. Service >> 1.CekValidationRequestBody, 2.GetUsername, 3.CekUsername, 4.EncryptPassword, 5.RegisterUser

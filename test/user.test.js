@@ -7,18 +7,18 @@ import bcrypt from "bcrypt";
 // Fungsi tes untuk register POST /api/users
 describe.skip('Register POST /api/users', function () {
 
-  //1a. sebelum test, hapus username: "test" di table/database
+  //0a. sebelum test, hapus username: "test" di table/database
   beforeEach(async () => {
     await removeTestUser();
   })
 
-  //1b. setelah selesai test, hapus username: "test" di table/database
+  //0b. setelah selesai test, hapus username: "test" di table/database
   afterEach(async () => {
     await removeTestUser();
   })
 
-  //2. register user baru
-  it('should can register new user', async () => {
+  //1. TEST register user baru
+  it('1. should can register new user', async () => {
     const result = await supertest(app)
       //kirim post req /api/users
       .post('/api/users')
@@ -29,7 +29,7 @@ describe.skip('Register POST /api/users', function () {
         name: 'test'
       });
     //log hasilnya result
-    console.log("REGISTER :", result.body.data);
+    console.log("result.body Test 1 :", result.body.data);
     //status harus 200
     expect(result.status).toBe(200);
     //isi body.data.username adalah test
@@ -39,8 +39,8 @@ describe.skip('Register POST /api/users', function () {
     expect(result.body.data.password).toBeDefined();
   });
 
-  //3. test body request invalid
-  it('should reject if request is invalid', async () => {
+  //2. TEST body request invalid
+  it('2. should reject if request is invalid', async () => {
     const result = await supertest(app)
       //kirim post req /api/users
       .post('/api/users')
@@ -51,14 +51,14 @@ describe.skip('Register POST /api/users', function () {
         name: ''
       });
     //log hasilnya result
-    console.log("REGISTER INVALID :", result.status, result.body);
+    console.log("result.body Test 2 :", result.body.data);
     //log hasilnya result
     expect(result.status).toBe(400);
     expect(result.body.errors).toBeDefined();
   });
 
-  //4. test user yang sudah terdaftar
-  it('should reject if username already registered', async () => {
+  //3. TEST user yang sudah terdaftar
+  it('3. should reject if username already registered', async () => {
     let result = await supertest(app)
       .post('/api/users')
       .send({
@@ -81,7 +81,7 @@ describe.skip('Register POST /api/users', function () {
         name: 'test'
       });
     //log hasilnya result
-    console.log("REGISTER REGISTERED :", result.status, result.body);
+    console.log("result.body Test 3 :", result.body.data);
     expect(result.status).toBe(400);
     expect(result.body.errors).toBeDefined();
   });
