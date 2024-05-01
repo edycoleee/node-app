@@ -104,9 +104,7 @@ describe.skip('POST /api/users/login', function () {
         username: "test",
         password: "rahasia"
       });
-
     console.log("result.body 1 :", result.body);
-
     expect(result.status).toBe(200);
     expect(result.body.data.token).toBeDefined();
     expect(result.body.data.token).not.toBe("test");
@@ -119,9 +117,7 @@ describe.skip('POST /api/users/login', function () {
         username: "",
         password: ""
       });
-
     console.log("result.body 2 :", result.body);
-
     expect(result.status).toBe(400);
     expect(result.body.errors).toBeDefined();
   });
@@ -133,9 +129,7 @@ describe.skip('POST /api/users/login', function () {
         username: "test",
         password: "salah"
       });
-
     console.log("result.body 3 :", result.body);
-
     expect(result.status).toBe(401);
     expect(result.body.errors).toBeDefined();
   });
@@ -147,9 +141,7 @@ describe.skip('POST /api/users/login', function () {
         username: "salah",
         password: "salah"
       });
-
     console.log("result.body 4 :", result.body);
-
     expect(result.status).toBe(401);
     expect(result.body.errors).toBeDefined();
   });

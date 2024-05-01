@@ -19,10 +19,13 @@ const register = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   try {
+    //1. Kirim request dari router ke service
     const result = await userService.login(req.body);
+    //2. Hasil service kirim sebagai response data
     res.status(200).json({
       data: result
     });
+    //3. Tangkap error kirim sebagai response error
   } catch (e) {
     next(e);
   }

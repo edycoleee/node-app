@@ -24,7 +24,7 @@ const register = async (request) => {
   //5. buat user baru ke database
   await query('INSERT INTO users (username,password,name,token) VALUES (?, ?, ?,?)', [user.username, user.password, user.name, ""]);
   //6. Get username di database
-  const rows = await query('SELECT * FROM users WHERE username = ?', [user.username])
+  const rows = await query('SELECT username,name FROM users WHERE username = ?', [user.username])
   //tampilkan hasilnya di log
   console.log(`POST NEW DATA: ${JSON.stringify(rows)}`);
   //7. return value sebagai response body
@@ -52,10 +52,12 @@ const login = async (request) => {
   //5. buat token dan update ke tabel user
   const token = uuid().toString()
 
-  await query('UPDATE users SET token = ? WHERE username = ?', [token, user[0].username]);
   //6. Get username di database >> kirim token sebagai response
+  await query('UPDATE users SET token = ? WHERE username = ?', [token, user[0].username]);
+  //7. Get username di database >> kirim token sebagai response
   user = await query('SELECT * FROM users WHERE username = ?', [user[0].username])
   const tokenUser = user[0].token
+  //8. return value sebagai response body
   return {
     token: tokenUser
   }
