@@ -220,3 +220,31 @@ Content-Type: application/json
 "username": "test"
 }
 
+### 1. GET contoh dengan auth tanpa token
+GET http://localhost:3000/api/contoh/current
+Content-Type: application/json
+
+{ 
+"username": "",
+"password": ""
+}
+
+### 2. GET contoh dengan auth dg token benar
+GET http://localhost:3000/api/contoh/current
+Content-Type: application/json
+Authorization: rahasia
+
+{ 
+"username": "",
+"password": ""
+}
+
+### 3. GET contoh dengan auth dg token salah
+GET http://localhost:3000/api/contoh/current
+Content-Type: application/json
+Authorization: salah
+
+{ 
+"username": "",
+"password": ""
+}

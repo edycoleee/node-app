@@ -3,7 +3,7 @@ const request = require('supertest');
 const { app } = require('../src/application');
 
 //a. fungsi testing : describe >> it
-describe('TEST CONTOH PUBLIC API', () => {
+describe.skip('TEST CONTOH PUBLIC API', () => {
 
   //1. TEST Valid username : edy  >> POST http://localhost:3000/api/contoh/public
   it('1a TEST POST http://localhost:3000/api/contoh/public', async () => {
@@ -45,3 +45,34 @@ describe('TEST CONTOH PUBLIC API', () => {
 
 //jalankan test
 //npx jest app.test.js
+
+//b. fungsi testing : describe >> it >> test api dg middleware
+describe('GET /api/contoh/current', function () {
+
+  it('1. should reject if dont have token', async () => {
+    const result = await request(app)
+      .get('/api/contoh/current')
+    console.log("result.body 1 :", result.body);
+    expect(result.status).toBe(401);
+    expect(result.body.errors).toBeDefined();
+  });
+
+  it('2. should can get current user', async () => {
+    const result = await request(app)
+      .get('/api/contoh/current')
+      .set('Authorization', 'rahasia');
+    console.log("result.body 2 :", result.body);
+    expect(result.status).toBe(200);
+    expect(result.body.data.username).toBe('edy-dari-middleware');
+    expect(result.body.data.name).toBe('Edy Cole');
+  });
+
+  it('3. should reject if token is invalid', async () => {
+    const result = await request(app)
+      .get('/api/contoh/current')
+      .set('Authorization', 'salah');
+    console.log("result.body 3 :", result.body);
+    expect(result.status).toBe(401);
+    expect(result.body.errors).toBeDefined();
+  });
+});

@@ -20,6 +20,25 @@ const contoh = async (request) => {
   }
 }
 
+//PROSES SERVICE : jika username = edy-dari-middleware kirim response{"username": "edy","name": "Edy Cole"}
+const getContoh = async (request) => {
+  console.log("request : ", request);
+  //1. VALIDASI >> jika error maka kirim pesan error, atau jika sesuai lanjutkan no.2
+  //yang di validasi : request body >> username
+  const user = validate(postContohValidation, request);
+  console.log("DATA VALIDATE:", user);
+  //2a. LOGIKA PROGRAM jika username tdk edy maka kirim Response Body Error
+  if (user != "edy-dari-middleware") {
+    throw new ResponseError(400, "Username not edy");
+  }
+  //2b. LOGIKA PROGRAM jika username edy maka kirim response Body Success
+  return {
+    username: user,
+    name: "Edy Cole"
+  }
+}
+
 export default {
-  contoh
+  contoh,
+  getContoh
 }

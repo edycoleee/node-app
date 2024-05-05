@@ -4,6 +4,7 @@ import express from "express";
 import { publicRouter } from "./route/public-api.js";
 import { errorMiddleware } from "./middleware/error-middleware.js";
 import { userRouter } from "./route/api.js";
+import { contohRouter } from "./route/contoh-api.js";
 
 //b. membuat object app dari express function
 export const app = express();
@@ -19,5 +20,6 @@ app.get('/', (req, res) => {
 });
 
 app.use(publicRouter);
-app.use(userRouter);
+//app.use(userRouter);
+app.use(contohRouter);
 app.use(errorMiddleware)

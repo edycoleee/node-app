@@ -16,6 +16,22 @@ const contoh = async (req, res, next) => {
   }
 }
 
+const getContoh = async (req, res, next) => {
+  try {
+    //setelah menjalankan aut-middleware dg token yg dikirim maka akan mendapatkan username, pada request body
+    console.log("req.user.username :", req.user.username);
+    const username = req.user.username;
+    //dengan username maka akan mendapatkan nama name
+    const result = await contohService.getContoh(username);
+    res.status(200).json({
+      data: result
+    });
+  } catch (e) {
+    next(e);
+  }
+}
+
 export default {
-  contoh
+  contoh,
+  getContoh
 }
