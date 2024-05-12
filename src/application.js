@@ -20,6 +20,6 @@ app.get('/', (req, res) => {
 });
 
 app.use(publicRouter);
-//app.use(userRouter);
-app.use(contohRouter);
+app.use(userRouter);
+//app.use(contohRouter);
 app.use(errorMiddleware)

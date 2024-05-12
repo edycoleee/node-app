@@ -252,33 +252,108 @@ describe('TEST GET No 1 dan No 3', () => {
 
 ### 6. Membuat REGISTER User API
 
+Endpoint : POST /api/users
+Request Body : {"username" : "","password" : "","name" : ""}
+Response Body Success : {"data" : {"username" : "","name" : ""}}
+
 ### 7. Membuat LOGIN User API
+
+Endpoint : POST /api/users/login
+Request Body : {"username" : "","password" : ""}
+Response Body Success : {"data" : {"token" : "unique-token"}}
 
 ### 8. Membuat GET User API
 
+Endpoint : GET /api/users/current
+Headers : Authorization : token
+Response Body Success : {"data" : {"username" : "","name" : ""}}
+
 ### 9. Membuat UPDATE User API
+
+Endpoint : PATCH /api/users/current
+Headers : Authorization : token
+Request Body : {
+"name" : "", // optional
+"password" : "" // optional
+}
+Response Body Success : {"data" : {"username" : "","name" : ""}}
 
 ### 10. Membuat LOGOUT User API
 
+Endpoint : DELETE /api/users/logout
+Headers : Authorization : token
+Response Body Success : {"data" : "OK"}
+
 ### 11. Membuat CREATE Contact API
+
+Endpoint : POST /api/contacts
+Headers : Authorization : token
+Request Body : {"first_name" : "","last_name" : "","email" : "","phone" : ""}
+Response Body Success : {"data" : {"id" : 1,"first_name" : "","last_name" : "","email" : "","phone" : ""}}
 
 ### 12. Membuat GET Contact API
 
+Endpoint : GET /api/contacts/:id
+Headers : Authorization : token
+Response Body Success : {"data" : {"id" : 1,"first_name" : "","last_name" : "","email" : "","phone" : ""}}
+
 ### 13. Membuat UPDATE Contact API
+
+Endpoint : PUT /api/contacts/:id
+Headers : Authorization : token
+Request Body : {"first_name" : "","last_name" : "","email" : "","phone" : ""}
+Response Body Success : {"data" : {"id" : 1,"first_name" : "","last_name" : "","email" : "","phone" : ""}}
 
 ### 14. Membuat REMOVE Contact API
 
+Endpoint : DELETE /api/contacts/:id
+Headers : Authorization : token
+Response Body Success : {"data" : "OK"}
+
 ### 15. Membuat SEARCH Contact API
+
+Endpoint : GET /api/contacts
+Headers : Authorization : token
+Query params :
+name : Search by first_name or last_name, using like, optional
+email : Search by email using like, optional
+phone : Search by phone using like, optional
+page : number of page, default 1
+size : size per page, default 10
+Response Body Success : {"data" : [{"id" : 1,"first_name" : "","last_name" : "","email" : "","phone" : ""}],
+"paging" : {"page" : 1,"total_page" : 3,"total_item" : 30}}
 
 ### 16. Membuat CREATE Address API
 
+Endpoint : POST /api/contacts/:contactId/addresses
+Headers : Authorization : token
+Request Body : {"street" : "","city" : "","province" : "","country" : "","postal_code" : ""}
+Response Body Success :{"data" : {"id" : 1,"street" : "","city" : "","province" : "","country" : "","postal_code" : ""}}
+
 ### 17. Membuat GET Address API
+
+Endpoint : GET /api/contacts/:contactId/addresses/:addressId
+Headers : Authorization : token
+Response Body Success :{"data" : {"id" : 1,"street" : "","city" : "","province" : "","country" : "","postal_code" : ""}}
 
 ### 18. Membuat UPDATE Address API
 
+Endpoint : PUT /api/contacts/:contactId/addresses/:addressId
+Headers : Authorization : token
+Request Body : {"street" : "","city" : "","province" : "","country" : "","postal_code" : ""}
+Response Body Success :{"data" : {"id" : 1,"street" : "","city" : "","province" : "","country" : "","postal_code" : ""}}
+
 ### 19. Membuat REMOVE Address API
 
+Endpoint : DELETE /api/contacts/:contactId/addresses/:addressId
+Headers : Authorization : token
+Response Body Success : {"data" : "OK"}
+
 ### 20. Membuat LIST Address API
+
+Endpoint : GET /api/contacts/:contactId/addresses
+Headers : Authorization : token
+Response Body Success :{"data" : [{"id" : 1,"street" : "","city" : "","province" : "","country" : "","postal_code" : ""}]}
 
 ## 4. Setting Database
 
@@ -1728,7 +1803,7 @@ Authorization: d6b46fdb-4063-4a4e-abd5-59738abc417a
 }
 ```
 
-## 9. Membuat UPDATE User API
+## 10. Membuat UPDATE User API
 
 `ENDPOINT >> ROUTER >> AUTH-API >> AUTH-MIDDLEWARE >> CONTROLLER >> SERVICE`
 
@@ -2022,7 +2097,7 @@ Content-Type: application/json
 Authorization: salah
 ```
 
-## 10. Membuat LOGOUT User API
+## 11. Membuat LOGOUT User API
 
 `ENDPOINT >> ROUTER >> AUTH-API >> AUTH-MIDDLEWARE >> CONTROLLER >> SERVICE`
 
@@ -2030,7 +2105,7 @@ Authorization: salah
 
 ### - a. LOGOUT Endpoint : POST /api/users/login
 
-## Logout User API
+## 12. Logout User API
 
 Endpoint : DELETE /api/users/logout
 
@@ -2200,22 +2275,22 @@ Authorization: salah
 
 ```
 
-## 11. Membuat CREATE Contact API
+## 13. Membuat CREATE Contact API
 
-## 12. Membuat GET Contact API
+## 14. Membuat GET Contact API
 
-## 13. Membuat UPDATE Contact API
+## 15. Membuat UPDATE Contact API
 
-## 14. Membuat REMOVE Contact API
+## 16. Membuat REMOVE Contact API
 
-## 15. Membuat SEARCH Contact API
+## 17. Membuat SEARCH Contact API
 
-## 16. Membuat CREATE Address API
+## 18. Membuat CREATE Address API
 
-## 17. Membuat GET Address API
+## 19. Membuat GET Address API
 
-## 18. Membuat UPDATE Address API
+## 20. Membuat UPDATE Address API
 
-## 19. Membuat REMOVE Address API
+## 21. Membuat REMOVE Address API
 
-## 20. Membuat LIST Address API
+## 22. Membuat LIST Address API

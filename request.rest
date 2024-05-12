@@ -248,3 +248,48 @@ Authorization: salah
 "username": "",
 "password": ""
 }
+
+
+
+### 11. Fungsi tes untuk CREATE Contact  >> Valid
+### REGISTER
+POST http://localhost:3000/api/users
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia",
+"name": "test"
+}
+
+
+### LOGIN >> token
+POST http://localhost:3000/api/users/login
+Content-Type: application/json
+
+{
+"username": "test",
+"password": "rahasia"
+}
+
+### GET dengan token
+GET http://localhost:3000/api/users/current
+Content-Type: application/json
+Authorization: 2fe70c70-0308-411c-b876-b9bde0666765
+
+{ 
+"username": "",
+"password": ""
+}
+
+### POST Contact dengan token >> valid 
+POST http://localhost:3000/api/contacts
+Content-Type: application/json
+Authorization: 2fe70c70-0308-411c-b876-b9bde0666765
+
+{
+  "first_name" : "test-first",
+  "last_name" : "test-last",
+  "email" : "test@mail.com",
+  "phone" : "12345667"
+  }

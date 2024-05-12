@@ -33,10 +33,10 @@ const login = async (req, res, next) => {
 
 const get = async (req, res, next) => {
   try {
-    //setelah menjalankan aut-middleware dg token yg dikirim maka akan mendapatkan username
+    //setelah menjalankan aut-middleware dg token yg dikirim maka akan mendapatkan >> username
     console.log("req.user.username :", req.user.username);
     const username = req.user.username;
-    //dengan username maka akan mendapatkan nama name
+    //dengan username >> proses service >> maka akan mendapatkan data username dan name
     const result = await userService.get(username);
     res.status(200).json({
       data: result
@@ -48,12 +48,13 @@ const get = async (req, res, next) => {
 
 const update = async (req, res, next) => {
   try {
-    //setelah menjalankan aut-middleware dg token yg dikirim maka akan mendapatkan username
+    //1. setelah menjalankan aut-middleware dg token yg dikirim maka akan mendapatkan (username)
     const username = req.user.username;
-    //mengambil data body untuk update data ke tabel database
+    //2. mengambil data body (name:optional dan password:optional) untuk update data ke tabel database
     const request = req.body;
+    //3. gabungkan semua ke body (username, name, password)
     request.username = username;
-
+    //4. kirim semua ke service dan tunggu response >> res.status dn res.json
     const result = await userService.update(request);
     res.status(200).json({
       data: result
@@ -65,8 +66,11 @@ const update = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
   try {
+    //1. setelah menjalankan aut-middleware dg token yg dikirim maka akan mendapatkan (username)
+    // langsung kirim ke service
     await userService.logout(req.user.username);
     console.log("LOGOUT");
+    //2. jika berhasil maka retutn data : OK
     res.status(200).json({
       data: "OK"
     });

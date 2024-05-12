@@ -65,6 +65,7 @@ const login = async (request) => {
 
 // username >> berasal dari middleware
 const get = async (username) => {
+  //1. validasi username dari middleware
   username = validate(getUserValidation, username);
   //2. Get username di database
   let user = await query('SELECT username,name FROM users WHERE username = ?', [username])
@@ -73,44 +74,45 @@ const get = async (username) => {
     throw new ResponseError(401, "Username or password wrong");
   }
   console.log("user :", user);
+  //4. return data user ke controller
   return user[0];
 }
 
 const update = async (request) => {
+  //1. Validation request (username, name(opsional),  password(opsional))
   const user = validate(updateUserValidation, request);
-
-  //2. Get username di database
+  //2. Get username,name dri database
   const DataUser = await query('SELECT username,name FROM users WHERE username = ?', [user.username])
-  //3. Cek jika username tdk ada / === 0 maka kirim error 401, user dn password salah
+  //3a. Jika username tdk ada / === 0 maka kirim error 401, user dn password salah
   if (DataUser.length === 0) {
     throw new ResponseError(404, "user is not found");
   }
   console.log("DataUser :", DataUser);
-
+  //3b. Jika request body > name dan username ditemukan maka data.name = user.name
   const data = {};
   if (user.name) {
     data.name = user.name;
   }
+  //3c. Jika request body > password dan username ditemukan maka data.password = await bcrypt.hash(user.password, 10)
   if (user.password) {
     data.password = await bcrypt.hash(user.password, 10);
   }
   console.log("data :", data);
-  // Buat string query update
+  //4. Buat string query update >> update hanya name, password atau update kuduanya
   const updateQuery = 'UPDATE users SET ' + Object.keys(data).map(key => `${key} = ?`).join(', ') + ' WHERE username = ?';
   const updateValues = [...Object.values(data), user.username];
-
-  //5. buat user baru ke database
+  //5. Update ke database
   await query(updateQuery, updateValues);
   //6. Get username di database
   const rows = await query('SELECT username,name FROM users WHERE username = ?', [user.username])
   //tampilkan hasilnya di log
   console.log(`POST NEW DATA: ${JSON.stringify(rows)}`);
+  //7. kirim data hasil get >> array ke 0 dari data
   return rows[0]
-
 }
 
 const logout = async (username) => {
-  console.log("username : ", username);
+  //1. validasi username dari middleware
   username = validate(getUserValidation, username);
   //2. Get username di database
   const DataUser = await query('SELECT username,name FROM users WHERE username = ?', [username])
@@ -119,11 +121,11 @@ const logout = async (username) => {
     throw new ResponseError(404, "user is not found");
   }
   console.log("DataUser :", DataUser);
-
+  //4. Update ke database set token = null where username
   await query('UPDATE users SET token = ? WHERE username = ?', [null, username]);
-  //6. Get username di database >> kirim token sebagai response
+  //5. Get username di database >> kirim token sebagai response
   const user = await query('SELECT * FROM users WHERE username = ?', [username])
-
+  //6. return username
   return {
     username: user[0].username
   }
