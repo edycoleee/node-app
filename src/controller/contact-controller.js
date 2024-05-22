@@ -18,7 +18,15 @@ const create = async (req, res, next) => {
 
 const get = async (req, res, next) => {
   try {
-
+    //1. ambil user = request user dari middleware
+    const user = req.user;
+    //2. ambil id dari request.params
+    const contactId = req.params.contactId;
+    //3. jalankan service dengan mengirim 2 variable tadi
+    const result = await contactService.get(user, contactId);
+    res.status(200).json({
+        data: result
+    })
   } catch (e) {
     next(e);
   }

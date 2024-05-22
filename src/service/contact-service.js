@@ -1,6 +1,6 @@
 //src/service/contact-service.js
 import { query } from "../util/db.js";
-import { createContactValidation } from "../validation/contact-validation.js";
+import { createContactValidation, getContactValidation, searchContactValidation, updateContactValidation } from "../validation/contact-validation.js";
 import { validate } from "../validation/validation.js";
 
 const create = async (user, request) => {
@@ -33,48 +33,107 @@ const create = async (user, request) => {
 const get = async (user, contactId) => {
   contactId = validate(getContactValidation, contactId);
 
-  const contact = {}
+  const [rows] = await query(
+      `SELECT ${contactSelectFields}
+       FROM contacts
+       WHERE username = ? AND id = ?`,
+      [user.username, contactId]
+  );
 
-  if (!contact) {
-    throw new ResponseError(404, "contact is not found");
+  if (rows.length === 0) {
+      throw new ResponseError(404, 'Contact not found');
   }
 
-  return contact;
+  return rows[0];
 }
 
 const update = async (user, request) => {
   const contact = validate(updateContactValidation, request);
 
-  const totalContactInDatabase = {}
+  const [result] = await query(
+      `UPDATE contacts
+       SET first_name = ?, last_name = ?, email = ?, phone = ?
+       WHERE username = ? AND id = ?`,
+      [contact.first_name, contact.last_name, contact.email, contact.phone, user.username, contact.id]
+  );
 
-  if (totalContactInDatabase !== 1) {
-    throw new ResponseError(404, "contact is not found");
+  if (result.affectedRows === 0) {
+      throw new ResponseError(404, 'Contact not found');
   }
 
-  return
+  const [rows] = await query(
+      `SELECT ${contactSelectFields}
+       FROM contacts
+       WHERE id = ?`,
+      [contact.id]
+  );
+
+  return rows[0];
 }
 
 const remove = async (user, contactId) => {
   contactId = validate(getContactValidation, contactId);
 
-  const totalInDatabase = {}
+  const [result] = await query(
+      `DELETE FROM contacts
+       WHERE username = ? AND id = ?`,
+      [user.username, contactId]
+  );
 
-  if (totalInDatabase !== 1) {
-    throw new ResponseError(404, "contact is not found");
+  if (result.affectedRows === 0) {
+      throw new ResponseError(404, 'Contact not found');
   }
 
-  return;
+  return { id: contactId };
 }
 
 const search = async (user, request) => {
   request = validate(searchContactValidation, request);
+  const { page, size, name, email, phone } = request;
+  const offset = (page - 1) * size;
+
+  const filters = ['username = ?'];
+  const values = [user.username];
+
+  if (name) {
+      filters.push(`(first_name LIKE ? OR last_name LIKE ?)`);
+      values.push(`%${name}%`, `%${name}%`);
+  }
+  if (email) {
+      filters.push(`email LIKE ?`);
+      values.push(`%${email}%`);
+  }
+  if (phone) {
+      filters.push(`phone LIKE ?`);
+      values.push(`%${phone}%`);
+  }
+
+  const whereClause = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : '';
+
+  const [rows] = await query(
+      `SELECT ${contactSelectFields}
+       FROM contacts
+       ${whereClause}
+       LIMIT ? OFFSET ?`,
+      [...values, size, offset]
+  );
+
+  const [countRows] = await query(
+      `SELECT COUNT(* AS total)
+       FROM contacts
+       ${whereClause}`,
+      values
+  );
+
+  const totalItems = countRows[0].total;
+
   return {
-    data: [{}],
-    paging: {
-      page: 1,
-      total_item: 1,
-      total_page: 1
-    }
+      data: rows,
+      paging: {
+          page: page,
+          total_item: totalItems,
+          total_page: Math.ceil(totalItems / size)
+      }
   }
 }
 
