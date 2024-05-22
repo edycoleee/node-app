@@ -275,7 +275,7 @@ Content-Type: application/json
 ### GET dengan token
 GET http://localhost:3000/api/users/current
 Content-Type: application/json
-Authorization: 2fe70c70-0308-411c-b876-b9bde0666765
+Authorization: d7dffeca-86b4-40e0-9a05-e690beec1347
 
 { 
 "username": "",
@@ -285,11 +285,23 @@ Authorization: 2fe70c70-0308-411c-b876-b9bde0666765
 ### POST Contact dengan token >> valid 
 POST http://localhost:3000/api/contacts
 Content-Type: application/json
-Authorization: 2fe70c70-0308-411c-b876-b9bde0666765
+Authorization: d7dffeca-86b4-40e0-9a05-e690beec1347
 
 {
   "first_name" : "test-first",
   "last_name" : "test-last",
   "email" : "test@mail.com",
   "phone" : "12345667"
+  }
+
+### POST Contact dengan token >> invalid 
+POST http://localhost:3000/api/contacts
+Content-Type: application/json
+Authorization: d7dffeca-86b4-40e0-9a05-e690beec1347
+
+{
+  "first_name" : "",
+  "last_name" : "test-last",
+  "email" : "test@mail.com",
+  "phone" : "123456678888888888888"
   }
