@@ -2,12 +2,16 @@
 import supertest from "supertest";
 import { app } from "../src/application.js";
 import {
+  createManyTestContacts,
   createTestContact,
   createTestUser,
   getTestContact,
   removeTestContact,
   removeTestUser,
 } from "./test-util.js";
+
+const SECONDS = 1000;
+jest.setTimeout(70 * SECONDS)
 
 describe.skip("POST /api/contacts", function () {
   //1.CREATE TEST USER >>
@@ -108,7 +112,7 @@ describe.skip('PUT /api/contacts/:contactId', function () {
   })
   //2. SESUDAH TEST(DELETE TEST USER, DELETE TEST CONTACT), 
   afterEach(async () => {
-    await removeTestContacts();
+    await removeTestContact();
     await removeTestUser();
   })
 
@@ -116,7 +120,7 @@ describe.skip('PUT /api/contacts/:contactId', function () {
     //3. GET DATA KONTAK UTK MENDAPATKAN ID, 
     const testContact = await getTestContact();
     //4. UPDATE KONTAK >> VALID
-    const result = await supertest(web)
+    const result = await supertest(app)
       .put('/api/contacts/' + testContact.id)
       .set('Authorization', 'test')
       .send({
@@ -134,10 +138,11 @@ describe.skip('PUT /api/contacts/:contactId', function () {
     expect(result.body.data.phone).toBe("09999999");
   });
 
-  it('should reject if request is invalid', async () => {
+  it('5. UPDATE KONTAK >> INVALID', async () => {
+    //GET DATA KONTAK UTK MENDAPATKAN ID, 
     const testContact = await getTestContact();
-
-    const result = await supertest(web)
+    //5. UPDATE KONTAK >> INVALID
+    const result = await supertest(app)
       .put('/api/contacts/' + testContact.id)
       .set('Authorization', 'test')
       .send({
@@ -150,37 +155,40 @@ describe.skip('PUT /api/contacts/:contactId', function () {
     expect(result.status).toBe(400);
   });
 
-  it('should reject if contact is not found', async () => {
+  it('6. UPDATE KONTAK >> NOT FOUND', async () => {
+    //GET DATA KONTAK UTK MENDAPATKAN ID, 
     const testContact = await getTestContact();
-
-    const result = await supertest(web)
+    //6. UPDATE KONTAK >> NOT FOUND >> ID + 1
+    const result = await supertest(app)
       .put('/api/contacts/' + (testContact.id + 1))
       .set('Authorization', 'test')
       .send({
         first_name: "Eko",
         last_name: "Khannedy",
-        email: "eko@pzn.com",
+        email: "edy@gmail.com",
         phone: "09999999"
       });
-
     expect(result.status).toBe(404);
   });
 });
 
 describe.skip('DELETE /api/contacts/:contactId', function () {
+  //1. SEBELUM TEST(DELETE TEST USER, DELETE TEST CONTACT, CREATE TEST USER, CREATE TEST CONTACT)
   beforeEach(async () => {
+    await removeTestContact();
+    await removeTestUser();
     await createTestUser();
     await createTestContact();
   })
-
+  //2. SESUDAH TEST(DELETE TEST USER, DELETE TEST CONTACT), 
   afterEach(async () => {
-    await removeAllTestContacts();
+    await removeTestContact();
     await removeTestUser();
   })
 
-  it('should can delete contact', async () => {
+  it('3. DELETE CONTACT > VALID', async () => {
     let testContact = await getTestContact();
-    const result = await supertest(web)
+    const result = await supertest(app)
       .delete('/api/contacts/' + testContact.id)
       .set('Authorization', 'test');
 
@@ -191,9 +199,9 @@ describe.skip('DELETE /api/contacts/:contactId', function () {
     expect(testContact).toBeNull();
   });
 
-  it('should reject if contact is not found', async () => {
+  it('3. DELETE CONTACT >> not found', async () => {
     let testContact = await getTestContact();
-    const result = await supertest(web)
+    const result = await supertest(app)
       .delete('/api/contacts/' + (testContact.id + 1))
       .set('Authorization', 'test');
 
@@ -201,22 +209,22 @@ describe.skip('DELETE /api/contacts/:contactId', function () {
   });
 });
 
-describe.skip('GET /api/contacts', function () {
+describe('GET /api/contacts', function () {
   beforeEach(async () => {
     await createTestUser();
     await createManyTestContacts();
   })
 
   afterEach(async () => {
-    await removeAllTestContacts();
+    await removeTestContact();
     await removeTestUser();
   })
 
-  it('should can search without parameter', async () => {
-    const result = await supertest(web)
+  it('1. should can search without parameter', async () => {
+    const result = await supertest(app)
       .get('/api/contacts')
       .set('Authorization', 'test');
-
+    console.log("result.body 1 :", result.body);
     expect(result.status).toBe(200);
     expect(result.body.data.length).toBe(10);
     expect(result.body.paging.page).toBe(1);
@@ -224,16 +232,15 @@ describe.skip('GET /api/contacts', function () {
     expect(result.body.paging.total_item).toBe(15);
   });
 
-  it('should can search to page 2', async () => {
-    const result = await supertest(web)
+  it.skip('2. should can search to page 2', async () => {
+    const result = await supertest(app)
       .get('/api/contacts')
       .query({
         page: 2
       })
       .set('Authorization', 'test');
 
-    logger.info(result.body);
-
+    console.log("result.body 2 :", result.body);
     expect(result.status).toBe(200);
     expect(result.body.data.length).toBe(5);
     expect(result.body.paging.page).toBe(2);
@@ -241,16 +248,14 @@ describe.skip('GET /api/contacts', function () {
     expect(result.body.paging.total_item).toBe(15);
   });
 
-  it('should can search using name', async () => {
-    const result = await supertest(web)
+  it.skip('3. should can search using name', async () => {
+    const result = await supertest(app)
       .get('/api/contacts')
       .query({
         name: "test 1"
       })
       .set('Authorization', 'test');
-
-    logger.info(result.body);
-
+    console.log("result.body 3 :", result.body);
     expect(result.status).toBe(200);
     expect(result.body.data.length).toBe(6);
     expect(result.body.paging.page).toBe(1);
@@ -258,16 +263,14 @@ describe.skip('GET /api/contacts', function () {
     expect(result.body.paging.total_item).toBe(6);
   });
 
-  it('should can search using email', async () => {
-    const result = await supertest(web)
+  it.skip('4. should can search using email', async () => {
+    const result = await supertest(app)
       .get('/api/contacts')
       .query({
         email: "test1"
       })
       .set('Authorization', 'test');
-
-    logger.info(result.body);
-
+    console.log("result.body 4 :", result.body);
     expect(result.status).toBe(200);
     expect(result.body.data.length).toBe(6);
     expect(result.body.paging.page).toBe(1);
@@ -275,15 +278,15 @@ describe.skip('GET /api/contacts', function () {
     expect(result.body.paging.total_item).toBe(6);
   });
 
-  it('should can search using phone', async () => {
-    const result = await supertest(web)
+  it.skip('5. should can search using phone', async () => {
+    const result = await supertest(app)
       .get('/api/contacts')
       .query({
         phone: "0809000001"
       })
       .set('Authorization', 'test');
 
-    logger.info(result.body);
+    console.log(result.body);
 
     expect(result.status).toBe(200);
     expect(result.body.data.length).toBe(6);

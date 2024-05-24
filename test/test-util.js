@@ -54,7 +54,7 @@ export const createTestContact = async () => {
 export const createManyTestContacts = async () => {
   //Membuat test kontak sejumlah 15 kontak dg for
   for (let i = 0; i < 15; i++) {
-    const query = `
+    const querySQL = `
           INSERT INTO contacts (username, first_name, last_name, email, phone)
           VALUES (?, ?, ?, ?, ?)
         `;
@@ -66,7 +66,7 @@ export const createManyTestContacts = async () => {
       `080900000${i}`
     ];
     // Menjalankan query untuk setiap kontak
-    const result = await query(query, values);
+    const result = await query(querySQL, values);
     console.log('Contact created with ID:', result.insertId);
   }
 }

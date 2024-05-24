@@ -62,7 +62,7 @@ const update = async (user, request) => {
     }
     //SELECT DATA WHERE
     querySQL = `SELECT id, first_name, last_name, email, phone FROM contacts WHERE id = ?`;
-    values = [user.contactId];
+    values = [contact.id];
     // Menjalankan query
     const rows = await query(querySQL, values);
     console.log("rows : ", rows);
@@ -112,11 +112,20 @@ const search = async (user, request) => {
     }
     //Penggabungan beberapa filter atau hanya 1 filter 
     const whereClause = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : '';
+    console.log("SELECT 1 :", `SELECT * FROM contacts ${whereClause} LIMIT ? OFFSET ?`, [...values, size, offset]);
     //SELECT DATA BERDASARKAN FILTER
-    const [rows] = await query(
-        `SELECT * FROM contacts ${whereClause} LIMIT ? OFFSET ?`, [...values, size, offset]);
+    let querySQL = `SELECT * FROM contacts WHERE username = ? LIMIT ? OFFSET ?`;
+    //DIDALAM SQL LIMIT DAN OFFSET ADALAH INTEGER/ANGKA, TAPI DI MYSQL2 MODULE HARUS DI KONVERSI STRING
+    let valuesSQL = [...values, String(size), String(offset)];
+    console.log(querySQL, valuesSQL);
+    // Menjalankan query
+    const rows = await query(querySQL, valuesSQL);
+    console.log('rows : ', rows);
     //HITUNG JUMLAH DATA BERDASARKAN FILTER
-    const [countRows] = await query(`SELECT COUNT(* AS total)FROM contacts${whereClause}`, values);
+    console.log("values : ", values);
+    console.log(`SELECT COUNT(* AS total) FROM contacts ${whereClause}`, values);
+    const countRows = await query(`SELECT COUNT(*) AS total FROM contacts  ${whereClause} `, values);
+    console.log("countRows :", countRows);
     //HITUNG JLM TOTAL ITEM
     const totalItems = countRows[0].total;
     //RETURN DATA
