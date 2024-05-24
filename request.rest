@@ -251,7 +251,7 @@ Authorization: salah
 
 
 
-### 11. Fungsi tes untuk CREATE Contact  >> Valid
+### SEMUA TEST DENGAN LOGIN >> TOKEN
 ### REGISTER
 POST http://localhost:3000/api/users
 Content-Type: application/json
@@ -275,17 +275,18 @@ Content-Type: application/json
 ### GET dengan token
 GET http://localhost:3000/api/users/current
 Content-Type: application/json
-Authorization: d7dffeca-86b4-40e0-9a05-e690beec1347
+Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b
 
 { 
 "username": "",
 "password": ""
 }
 
+### 11. Fungsi tes untuk CREATE Contact  >> Valid
 ### POST Contact dengan token >> valid 
 POST http://localhost:3000/api/contacts
 Content-Type: application/json
-Authorization: d7dffeca-86b4-40e0-9a05-e690beec1347
+Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b
 
 {
   "first_name" : "test-first",
@@ -297,7 +298,47 @@ Authorization: d7dffeca-86b4-40e0-9a05-e690beec1347
 ### POST Contact dengan token >> invalid 
 POST http://localhost:3000/api/contacts
 Content-Type: application/json
-Authorization: d7dffeca-86b4-40e0-9a05-e690beec1347
+Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b
+
+{
+  "first_name" : "",
+  "last_name" : "test-last",
+  "email" : "test@mail.com",
+  "phone" : "123456678888888888888"
+  }
+
+
+### 12. Fungsi tes untuk GET Contact  >> Valid
+### REGISTER >> LOGIN >> TOKEN
+### POST CONTACT >> ID >> GET CONTACT ID
+### POST Contact dengan token >> valid 
+POST http://localhost:3000/api/contacts
+Content-Type: application/json
+Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b
+
+{
+  "first_name" : "test-first",
+  "last_name" : "test-last",
+  "email" : "test@mail.com",
+  "phone" : "12345667"
+  }
+
+### GET Contact id dengan token >> valid 
+GET http://localhost:3000/api/contacts/37
+Content-Type: application/json
+Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b
+
+{
+  "first_name" : "test-first",
+  "last_name" : "test-last",
+  "email" : "test@mail.com",
+  "phone" : "12345667"
+  }
+
+### GET Contact id+1 dengan token >> invalid 
+GET http://localhost:3000/api/contacts/38
+Content-Type: application/json
+Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b
 
 {
   "first_name" : "",
