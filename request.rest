@@ -346,3 +346,83 @@ Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b
   "email" : "test@mail.com",
   "phone" : "123456678888888888888"
   }
+
+// 13. Fungsi tes untuk UPDATE Contact
+// REGISTER >> LOGIN >> TOKEN
+// POST CONTACT >> ID >> GET CONTACT ID
+### UPDATE KONTAK >> VALID
+PUT http://localhost:3000/api/contacts/38
+Content-Type: application/json
+Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b
+
+{
+  "first_name": "Edy",
+  "last_name": "Cole",
+  "email": "edy@gmail.com",
+  "phone": "09999999"
+}
+
+
+### UPDATE KONTAK >> INVALID
+PUT http://localhost:3000/api/contacts/38
+Content-Type: application/json
+Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b
+
+{
+  "first_name": "",
+  "last_name": "Cole",
+  "email": "",
+  "phone": "09999999"
+}
+### UPDATE KONTAK >> NOT FOUND >> ID + 1
+PUT http://localhost:3000/api/contacts/39
+Content-Type: application/json
+Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b
+
+{
+  "first_name": "Edy",
+  "last_name": "Cole",
+  "email": "edy@gmail.com",
+  "phone": "09999999"
+}
+
+// 14. Fungsi tes untuk REMOVE Contact
+// REGISTER >> LOGIN >> TOKEN
+// POST CONTACT >> ID >> GET CONTACT ID
+### REMOVE KONTAK >> VALID
+DELETE http://localhost:3000/api/contacts/38
+Content-Type: application/json
+Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b
+
+### REMOVE KONTAK >> NOT FOUND >> ID + 1
+DELETE http://localhost:3000/api/contacts/39
+Content-Type: application/json
+Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b
+
+// 15. Fungsi tes untuk SEARCH Contact
+// REGISTER >> LOGIN >> TOKEN
+// POST CONTACT >> ID >> GET CONTACT ID
+### SEARCH KONTAK >> WITHOUT PARAMETER
+GET http://localhost:3000/api/contacts
+Content-Type: application/json
+Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b
+
+### SEARCH KONTAK >> TO PAGE 2
+GET http://localhost:3000/api/contacts?page=2
+Content-Type: application/json
+Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b
+
+### SEARCH KONTAK >> USE NAME
+GET http://localhost:3000/api/contacts?name=test1
+Content-Type: application/json
+Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b
+
+### SEARCH KONTAK >> USE EMAIL
+GET http://localhost:3000/api/contacts?email=test1
+Content-Type: application/json
+Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b
+
+### SEARCH KONTAK >> USE PHONE
+GET http://localhost:3000/api/contacts?phone=0809000001
+Content-Type: application/json
+Authorization: 44f85213-7f03-4ebf-952b-e127eaaaf98b

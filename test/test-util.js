@@ -70,3 +70,40 @@ export const createManyTestContacts = async () => {
     console.log('Contact created with ID:', result.insertId);
   }
 }
+
+
+export const removeAllTestAddresses = async () => {
+  // Menghapus semua alamat yang terkait dengan kontak yang memiliki username "test"
+  const querySQL = `
+        DELETE FROM addresses
+        WHERE contact_id IN (
+            SELECT id FROM contacts WHERE username = ?
+        )
+    `;
+  await query(querySQL, ['test']);
+}
+
+export const createTestAddress = async () => {
+  const contact = await getTestContact();
+  if (!contact) {
+    throw new Error('Test contact not found');
+  }
+
+  const querySQL = `
+        INSERT INTO addresses (contact_id, street, city, province, country, postal_code)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `;
+  await query(querySQL, [contact.id, 'jalan test', 'kota test', 'provinsi test', 'indonesia', '234234']);
+}
+
+export const getTestAddress = async () => {
+  const querySQL = `
+        SELECT * FROM addresses
+        WHERE contact_id IN (
+            SELECT id FROM contacts WHERE username = ?
+        )
+        LIMIT 1
+    `;
+  const rows = await query(querySQL, ['test']);
+  return rows.length > 0 ? rows[0] : null;
+}

@@ -48,25 +48,25 @@ const get = async (user, contactId) => {
 }
 
 const update = async (user, request) => {
-    //VALIDASI request
+    //1. VALIDASI request
     const contact = validate(updateContactValidation, request);
-    //UPDATE DATA WHERE
+    //2. UPDATE DATA WHERE
     let querySQL = `UPDATE contacts SET first_name = ?, last_name = ?, email = ?, phone = ? WHERE username = ? AND id = ?`;
     let values = [contact.first_name, contact.last_name, contact.email, contact.phone, user.username, contact.id];
-    // Menjalankan query
+    //Menjalankan query
     const result = await query(querySQL, values);
     console.log("rows : ", result);
-    // Jika Tidak bisa update
+    //Jika Tidak bisa update
     if (result.affectedRows === 0) {
         throw new ResponseError(404, 'Contact not found');
     }
-    //SELECT DATA WHERE
+    //3. SELECT DATA WHERE UTK RETURN
     querySQL = `SELECT id, first_name, last_name, email, phone FROM contacts WHERE id = ?`;
     values = [contact.id];
     // Menjalankan query
     const rows = await query(querySQL, values);
     console.log("rows : ", rows);
-    //RETURN DATA SETELAH UPDATE
+    //4. RETURN DATA SETELAH UPDATE
     return rows[0];
 }
 
@@ -122,7 +122,6 @@ const search = async (user, request) => {
     const rows = await query(querySQL, valuesSQL);
     console.log('rows : ', rows);
     //HITUNG JUMLAH DATA BERDASARKAN FILTER
-    console.log("values : ", values);
     console.log(`SELECT COUNT(* AS total) FROM contacts ${whereClause}`, values);
     const countRows = await query(`SELECT COUNT(*) AS total FROM contacts  ${whereClause} `, values);
     console.log("countRows :", countRows);
